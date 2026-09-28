@@ -125,7 +125,7 @@ uv run pytest tokenizer_lab_tests/test_support.py -q
 uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input tokenizer_lab_data/tiny.txt --output var/tokenizer_lab/tiny-counts.json
 ```
 
-默认进程数是 1。教师允许时，可增加 `--workers 2`。多个特殊 token 或没有特殊 token 时会保守退回串行；仅有一个特殊 token 时才沿该边界并行切块。单进程/单块会将对应文本块读入内存，本框架不承诺常数内存的全量预处理。
+使用 `--workers` 设置预分词进程数，例如 `--workers 2`。多个特殊 token 或没有特殊 token 时会保守退回串行；仅有一个特殊 token 时才沿该边界并行切块。单进程/单块会将对应文本块读入内存，本框架不承诺常数内存的全量预处理。
 
 默认特殊 token 为 `<|endoftext|>`；可重复使用 `--special-token` 指定多个特殊 token，或使用 `--no-special-tokens`。缓存保存 pattern、特殊 token 配置和原始文件 SHA-256。使用缓存意味着使用该快照；原文变化后需重新生成，框架不会自动重新检查原始文件。
 
@@ -163,6 +163,12 @@ uv run python -m tokenizer_lab_code.tokenizer_lab.cli compare --cache var/tokeni
 
 此时不要加 `--debug`。输入准备时间单独报告；两版交替运行顺序并使用相同缓存、词表目标和轻量 trace。先用小样本完成上述流程，再由教师决定是否使用 5MB 样本或更大语料。小数据上的优化版可能更慢；不能预设必须获得某个固定加速倍数。
 
+### 7.7 按原实验训练 TinyStories 10K / OWT 32K
+
+完整操作见 [M1：按原作业训练 TinyStories / OpenWebText 分词器](m1_tokenizer.md#original-data-training)，包含数据下载/共享路径、预分词缓存、两种语料的训练与加载命令、Python API 调用、最长 token 观察和耗时/内存统计。原规模实验位于必做任务之后，仍为选做。
+
+切换训练算法使用 `--variant naive`（A）或 `--variant incremental`（B），输出路径也应区分 A/B。两版共用缓存和编码器。完整语料推荐在完成 B 版后执行；样本上先用 `compare` 验证等价。`--workers` 只控制预分词，BPE 合并循环不因增加它而并行。
+
 ## 8. 与原 CS336 测试衔接
 
 `tests/adapters.py` 的两个分词相关入口已经连接到本框架，模型、优化和训练入口也已接线；每个阶段只验收对应的学生实现。
@@ -177,6 +183,8 @@ uv run pytest tests/test_tokenizer.py
 原 `tests/test_tokenizer.py` 使用 Unix `resource`，应在课程 Linux 平台运行；新增 `tokenizer_lab_tests` 可在 Windows/Linux 运行，且不依赖 torch。运行整仓库 pytest 会包含尚未完成的 Transformer 等测试，不是本 milestone 的验收方式。
 
 原 adapter 默认选择 A 版。完成 B 后可设置 `CS336_BPE_VARIANT=incremental` 再运行原 BPE 测试：
+
+该环境变量只影响 adapter；教学 CLI 仍需显式传 `--variant incremental`，直接调用 `api.train_bpe` / `api.train_counts` 则传 `variant="incremental"`。显式传给 adapter 的 `variant=` 优先于环境变量。
 
 ```sh
 # Linux shell

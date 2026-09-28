@@ -1,5 +1,6 @@
 """M4：训练/采样小测试，以及真正经过 M1→M4 的端到端实验。"""
 
+from dataclasses import asdict
 import copy
 import json
 
@@ -9,17 +10,50 @@ import torch
 
 from generation_lab_code.sampling import generate, last_logits, nucleus_keep, sample_next
 from lab_tools.generate import run as generate_run
-from lab_tools.prepare import demo
+from lab_tools.prepare import demo, prepare
 from lab_tools.train import run
 from lab_tools.verify_training import verify
 from training_lab_code.checkpoint import read_checkpoint
 from training_lab_code.optimizer import AdamW
-from training_lab_code.student import shifted_windows, train_step, weighted_validation_loss
+from training_lab_code.data import get_batch
+from training_lab_code.student import train_step, weighted_validation_loss
 from transformer_lab_code.model import ModelConfig, TransformerLM
+from tokenizer_lab_code.tokenizer_lab.common import TrainingResult
+from tokenizer_lab_code.tokenizer_lab.storage import load_model, save_model, save_vocab_merges
+from tokenizer_lab_code.tokenizer_lab.tokenizer import Tokenizer
+
+
+def test_pdf_files_prepare_preserves_ids(tmp_path):
+    special = "<|endoftext|>"
+    vocab = {i: bytes([i]) for i in range(256)}
+    vocab.update({256: b"ab", 257: special.encode()})
+    merges = [(b"a", b"b")]
+    vocab_path, merges_path = tmp_path / "vocab.json", tmp_path / "merges.json"
+    save_vocab_merges(vocab_path, merges_path, vocab, merges)
+    combined = tmp_path / "tokenizer.json"
+    save_model(combined, TrainingResult(vocab, merges), special_tokens=[special])
+    train, valid = tmp_path / "train.txt", tmp_path / "valid.txt"
+    train.write_text("ab你好" + special + "ab", encoding="utf-8")
+    valid.write_text("你好ab" + special, encoding="utf-8")
+    new, old = tmp_path / "new", tmp_path / "old"
+    manifest = prepare(None, train, valid, new, vocab_filepath=vocab_path,
+                       merges_filepath=merges_path, special_tokens=[special])
+    prepare(combined, train, valid, old)
+    tokenizer = Tokenizer(vocab, merges, [special])
+    for name, source in (("train", train), ("valid", valid)):
+        ids = np.load(new / f"{name}.npy")
+        np.testing.assert_array_equal(ids, np.load(old / f"{name}.npy"))
+        assert ids.tolist() == tokenizer.encode(source.read_text(encoding="utf-8"))
+    restored = load_model(new / "tokenizer.json")
+    assert restored.vocab == vocab and restored.merges == merges
+    assert restored.special_tokens == [special]
+    assert manifest["eos_id"] == 257
+    with pytest.raises(ValueError, match="不能混用"):
+        prepare(combined, train, valid, tmp_path / "mixed", vocab_filepath=vocab_path)
 
 
 def test_shift_and_weighted_validation():
-    x, y = shifted_windows(np.arange(10), np.array([0, 6]), 3)
+    x, y = get_batch(np.arange(10), 2, 3, "cpu", starts=np.array([0, 6]))
     np.testing.assert_array_equal(x, [[0, 1, 2], [6, 7, 8]])
     np.testing.assert_array_equal(y, [[1, 2, 3], [7, 8, 9]])
     assert weighted_validation_loss([2.0, 8.0], [6, 2]) == pytest.approx(3.5)
@@ -28,7 +62,7 @@ def test_shift_and_weighted_validation():
 def test_gradient_accumulation_matches_full_batch():
     torch.manual_seed(12)
     config = ModelConfig(vocab_size=12, context_length=4, d_model=8, num_layers=1, num_heads=2, d_ff=16)
-    a, b = TransformerLM(config), TransformerLM(config)
+    a, b = TransformerLM(**asdict(config)), TransformerLM(**asdict(config))
     b.load_state_dict(a.state_dict())
     oa, ob = AdamW(a.parameters()), AdamW(b.parameters())
     x, y = torch.randint(0, 12, (4, 4)), torch.randint(0, 12, (4, 4))

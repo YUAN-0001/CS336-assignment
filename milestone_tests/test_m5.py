@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from lab_tools.submission import validate_run
-from transformer_lab_code.model import ModelConfig, TransformerLM
+from transformer_lab_code.model import TransformerLM
 
 
 @pytest.mark.parametrize(
@@ -15,7 +15,7 @@ from transformer_lab_code.model import ModelConfig, TransformerLM
 def test_experiment_switches_have_gradients(options):
     values = dict(vocab_size=32, context_length=8, d_model=16, num_heads=2, num_layers=1, d_ff=48)
     values.update(options)
-    model = TransformerLM(ModelConfig(**values))
+    model = TransformerLM(**values)
     model(torch.randint(0, 32, (2, 8))).square().mean().backward()
     assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in model.parameters())
     if options.get("tie_embeddings"):

@@ -1,5 +1,6 @@
 """M4 实验：固定 batch 过拟合，以及 CPU 连续训练/恢复训练一致性。"""
 
+from dataclasses import asdict
 import argparse
 from pathlib import Path
 
@@ -16,7 +17,6 @@ from .train import seed_all
 
 
 def verify(data_dir, out):
-    torch.set_num_threads(2)
     dataset = Dataset(data_dir)
     config = ModelConfig(
         vocab_size=dataset.manifest["vocab_size"], context_length=16, d_model=32, num_layers=1, num_heads=4, d_ff=96
@@ -25,7 +25,7 @@ def verify(data_dir, out):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     seed_all(123)
-    model = TransformerLM(config)
+    model = TransformerLM(**asdict(config))
     optimizer = AdamW(model.parameters(), lr=0.01, weight_decay=0)
     x, y = get_batch(dataset.train, 2, 16)
     before = forward_loss(model, x, y).item()
@@ -35,14 +35,14 @@ def verify(data_dir, out):
         raise AssertionError("固定 batch 的 loss 未明显下降；先检查 S2 和前面各阶段")
 
     seed_all(321)
-    continuous = TransformerLM(config)
+    continuous = TransformerLM(**asdict(config))
     continuous_opt = AdamW(continuous.parameters())
     for _ in range(3):
         train_step(continuous, continuous_opt, [get_batch(dataset.train, 2, 16)])
     checkpoint = out / "recovery_start.pt"
     save_checkpoint(continuous, continuous_opt, 3, checkpoint)
     tail_losses = [train_step(continuous, continuous_opt, [get_batch(dataset.train, 2, 16)]) for _ in range(3)]
-    resumed = TransformerLM(config)
+    resumed = TransformerLM(**asdict(config))
     resumed_opt = AdamW(resumed.parameters())
     load_checkpoint(checkpoint, resumed, resumed_opt, restore_random=True)
     resumed_losses = [train_step(resumed, resumed_opt, [get_batch(dataset.train, 2, 16)]) for _ in range(3)]

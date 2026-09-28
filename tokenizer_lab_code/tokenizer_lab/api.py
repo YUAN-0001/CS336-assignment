@@ -32,7 +32,8 @@ def train_bpe(
     num_workers: int = 1,
     pattern: str = PATTERN,
     debug: bool = False,
-):
+) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+    """PDF train_bpe：原始文本路径 → (vocab, merges)。A/B 扩展不改变返回类型。"""
     counts = parallel_pretokenize(input_path, special_tokens, num_workers, pattern)
     result = train_counts(counts, vocab_size, special_tokens, variant=variant, debug=debug)
     return result.vocab, result.merges

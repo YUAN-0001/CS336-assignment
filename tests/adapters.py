@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 import os
 from collections.abc import Iterable
 from typing import IO, Any, BinaryIO
@@ -304,10 +305,10 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    from transformer_lab_code.model import ModelConfig, TransformerBlock
+    from transformer_lab_code.model import TransformerBlock
 
-    config = ModelConfig(d_model=d_model, num_heads=num_heads, d_ff=d_ff, context_length=max_seq_len, rope_theta=theta)
-    return _course_call(TransformerBlock(config), weights, in_features)
+    block = TransformerBlock(d_model, num_heads, d_ff, context_length=max_seq_len, rope_theta=theta)
+    return _course_call(block, weights, in_features)
 
 
 def run_transformer_lm(
@@ -400,7 +401,7 @@ def run_transformer_lm(
         d_ff=d_ff,
         rope_theta=rope_theta,
     )
-    return _course_call(TransformerLM(config), weights, in_indices)
+    return _course_call(TransformerLM(**asdict(config)), weights, in_indices)
 
 
 def run_rmsnorm(

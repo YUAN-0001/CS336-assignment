@@ -1,20 +1,8 @@
-"""M4：三人小组填写 S1–S3。M1–M3 的实现继续由原文件提供。"""
-
-import numpy as np  # noqa: F401 -- S1 使用
+"""M4：S2–S3 训练与验证；S1 在 data.get_batch，M1–M3 继续复用。"""
 import torch
 
 from .losses import cross_entropy
 from .optimizer import clip_gradients  # noqa: F401 -- S2 使用
-
-
-def shifted_windows(data, starts, context_length):
-    """S1：返回 numpy 数组 (x,y)，形状均为 [B,T]。
-
-    data 是一维 token 数组；starts 是有效起点数组，已由框架采样。
-    对每个起点 s，x=data[s:s+T]，y=data[s+1:s+T+1]。
-    可使用列表推导式与 np.stack，不要求自己写高效索引或 DataLoader 类。
-    """
-    raise NotImplementedError("TODO S1: shifted_windows")
 
 
 def forward_loss(model, x, y, precision="fp32"):

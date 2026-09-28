@@ -9,6 +9,8 @@ from .pretokenize import PATTERN, split_special
 
 
 class Tokenizer:
+    """PDF §2.6：由 vocab / merges 构造，或通过 from_files 读取双文件。"""
+
     def __init__(
         self,
         vocab: dict[int, bytes],
@@ -42,6 +44,14 @@ class Tokenizer:
                 raise ValueError("merge 的组成项或合并结果不在词表中")
         self.pattern = regex.compile(pattern)
 
+    @classmethod
+    def from_files(cls, vocab_filepath: str, merges_filepath: str, special_tokens: list[str] | None = None):
+        """教师提供：读取 save_vocab_merges 保存的词表和合并表；不改变 token ID。"""
+        from .storage import load_vocab_merges
+
+        vocab, merges = load_vocab_merges(vocab_filepath, merges_filepath)
+        return cls(vocab, merges, special_tokens)
+
     def encode_pretoken(self, raw: bytes) -> list[int]:
         """TODO C1：把一个普通 pre-token 的 bytes 编码为 token IDs。
 
@@ -63,7 +73,7 @@ class Tokenizer:
                     ids.extend(self.encode_pretoken(match.group().encode("utf-8")))
         return ids
 
-    def decode(self, ids: Iterable[int]) -> str:
+    def decode(self, ids: list[int]) -> str:
         """TODO C2：查词表，拼接全部 bytes 后统一解码 UTF-8（errors='replace'）。
 
         不能逐个 token 解码，因为一个汉字/emoji 的字节可能分布在多个 token 中。

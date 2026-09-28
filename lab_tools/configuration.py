@@ -28,7 +28,7 @@ class TrainConfig:
     save_every: int = 100
     seed: int = 42
     precision: str = "fp32"
-    cpu_threads: int = 2
+    cpu_threads: int | None = None  # 未指定时遵循 PyTorch / 运行环境默认值
 
     def __post_init__(self):
         for name in (
@@ -41,10 +41,11 @@ class TrainConfig:
             "eval_batch_size",
             "eval_context_length",
             "save_every",
-            "cpu_threads",
         ):
             if type(getattr(self, name)) is not int or getattr(self, name) <= 0:
                 raise ValueError(f"{name} 必须是正整数")
+        if self.cpu_threads is not None and (type(self.cpu_threads) is not int or self.cpu_threads <= 0):
+            raise ValueError("cpu_threads 应为正整数或 null（不覆盖环境默认值）")
         if not 0 <= self.warmup_steps < self.schedule_steps:
             raise ValueError("要求 0 <= warmup_steps < schedule_steps")
         if self.schedule_steps < self.total_steps:

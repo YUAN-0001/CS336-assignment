@@ -8,17 +8,15 @@ from generation_lab_code.sampling import generate
 from tokenizer_lab_code.tokenizer_lab.storage import load_model, write_json
 from training_lab_code.checkpoint import read_checkpoint
 from training_lab_code.data import Dataset
-from transformer_lab_code.model import ModelConfig, TransformerLM
+from transformer_lab_code.model import TransformerLM
 
 
 def run(checkpoint, data, prompt, out, device="cpu", max_new_tokens=128, temperature=1.0, top_p=0.9, seed=42):
-    if torch.device(device).type == "cpu":
-        torch.set_num_threads(2)
     dataset = Dataset(data)
     saved = read_checkpoint(checkpoint)
     if saved["extra"]["data_identity"] != dataset.identity:
         raise ValueError("checkpoint 和数据/tokenizer 不配套")
-    model = TransformerLM(ModelConfig(**saved["extra"]["config"]["model"]), device=device)
+    model = TransformerLM(**saved["extra"]["config"]["model"], device=device)
     model.load_state_dict(saved["model"])
     tokenizer = load_model(dataset.tokenizer_path)
     ids = tokenizer.encode(prompt)

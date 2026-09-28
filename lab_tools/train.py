@@ -1,5 +1,6 @@
 """训练入口：复用 M1–M4 的学生实现，框架负责配置、记录和恢复。"""
 
+from dataclasses import asdict
 import argparse
 import hashlib
 import json
@@ -57,7 +58,7 @@ def run(config_path, data_dir, out_dir, device="cpu", resume=None, stop_after=No
         raise ValueError("停止步数/时间预算必须为正")
     dataset = Dataset(data_dir)
     mc, tc = load_config(config_path, dataset.manifest["vocab_size"])
-    if torch.device(device).type == "cpu":
+    if torch.device(device).type == "cpu" and tc.cpu_threads is not None:
         torch.set_num_threads(tc.cpu_threads)
     dataset.check_context(mc.context_length)
     if tc.eval_context_length > mc.context_length:
@@ -68,7 +69,7 @@ def run(config_path, data_dir, out_dir, device="cpu", resume=None, stop_after=No
     seed_all(tc.seed)
     if str(device).startswith("cuda"):
         torch.cuda.reset_peak_memory_stats(device)
-    model = TransformerLM(mc, device=device)
+    model = TransformerLM(**asdict(mc), device=device)
     optimizer = AdamW(
         model.parameters(), lr=tc.max_lr, betas=(tc.beta1, tc.beta2), eps=tc.eps, weight_decay=tc.weight_decay
     )

@@ -4,11 +4,11 @@ import torch
 
 from transformer_lab_code.attention import RotaryPositionalEmbedding, causal_mask, scaled_dot_product_attention
 from transformer_lab_code.layers import RMSNorm, softmax
-from transformer_lab_code.model import ModelConfig, TransformerLM
+from transformer_lab_code.model import TransformerLM
 
 
 def tiny_model():
-    return TransformerLM(ModelConfig(vocab_size=32, context_length=16, d_model=16, num_layers=2, num_heads=4, d_ff=32))
+    return TransformerLM(vocab_size=32, context_length=16, d_model=16, num_layers=2, num_heads=4, d_ff=32)
 
 
 def test_causality_and_gradients():

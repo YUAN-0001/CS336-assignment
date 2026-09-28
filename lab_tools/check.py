@@ -10,8 +10,11 @@ STAGES = {
         "tokenizer_lab_tests/test_support.py",
         "tokenizer_lab_tests/test_naive.py",
         "tokenizer_lab_tests/test_tokenizer.py",
+        "tokenizer_lab_tests/test_file_support.py",
+        "tokenizer_lab_tests/test_pdf_interface.py",
     ],
-    2: ["milestone_tests/test_m2.py", "tests/test_model.py", "tests/test_nn_utils.py::test_softmax_matches_pytorch"],
+    2: ["milestone_tests/test_m2.py", "milestone_tests/test_pdf_m2.py", "tests/test_model.py",
+        "tests/test_nn_utils.py::test_softmax_matches_pytorch"],
     3: [
         "milestone_tests/test_m3.py",
         "tests/test_optimizer.py",
@@ -25,7 +28,8 @@ STAGES = {
 
 def targets(stage, only=False, support=False):
     if support:
-        return ["tokenizer_lab_tests/test_support.py", "milestone_tests/test_support.py"]
+        return ["tokenizer_lab_tests/test_support.py", "tokenizer_lab_tests/test_file_support.py",
+                "milestone_tests/test_support.py"]
     stages = [stage] if only else range(1, stage + 1)
     return [item for n in stages for item in STAGES[n]]
 

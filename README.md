@@ -6,15 +6,15 @@
 
 ## 从哪里开始
 
-| 阶段 | 形式 | 实验说明 | 待填写代码 | 阶段能力 |
-|---|---|---|---|---|
-| M1 文本变成 token | 个人 | [M1](docs/m1_tokenizer.md) | [A版](tokenizer_lab_code/tokenizer_lab/naive.py)、[编码器](tokenizer_lab_code/tokenizer_lab/tokenizer.py) | 小语料 BPE 训练、编码解码 |
-| M2 token 变成预测 | 个人 | [M2](docs/m2_transformer.md) | [基础层](transformer_lab_code/layers.py)、[Attention](transformer_lab_code/attention.py)、[模型](transformer_lab_code/model.py) | Transformer 前向、因果性与梯度 |
-| M3 让参数学习 | 个人 | [M3](docs/m3_optimization.md) | [损失](training_lab_code/losses.py)、[优化器](training_lab_code/optimizer.py) | 交叉熵、AdamW、调度、裁剪 |
-| M4 训练并生成 | 三人小组 | [M4](docs/m4_training.md) | [训练核心](training_lab_code/student.py)、[采样](generation_lab_code/sampling.py) | 可恢复训练、验证、文本生成 |
-| M5 优化与研究 | 原三人小组 | [M5](docs/m5_experiments.md) | 自己的模型与 [配置](configs) | 基线与改动方案的受控实验 |
+| 阶段 | 实验说明 | 待填写代码 | 阶段能力 |
+|---|---|---|---|
+| M1 文本变成 token | [M1](docs/m1_tokenizer.md) | [A版](tokenizer_lab_code/tokenizer_lab/naive.py)、[编码器](tokenizer_lab_code/tokenizer_lab/tokenizer.py) | 小语料 BPE 训练、编码解码 |
+| M2 token 变成预测 | [M2](docs/m2_transformer.md) | [基础层](transformer_lab_code/layers.py)、[Attention](transformer_lab_code/attention.py)、[模型](transformer_lab_code/model.py) | Transformer 前向、因果性与梯度 |
+| M3 让参数学习 | [M3](docs/m3_optimization.md) | [损失](training_lab_code/losses.py)、[优化器](training_lab_code/optimizer.py) | 交叉熵、AdamW、调度、裁剪 |
+| M4 训练并生成 | [M4](docs/m4_training.md) | [数据采样](training_lab_code/data.py)、[训练核心](training_lab_code/student.py)、[采样](generation_lab_code/sampling.py) | 可恢复训练、验证、文本生成 |
+| M5 优化与研究 | [M5](docs/m5_experiments.md) | 自己的模型与 [配置](configs) | 基线与改动方案的受控实验 |
 
-先读 [课程约定、环境与阶段验收](docs/course_guide.md)。M1 仅需 CPU；M2/M3 的微型测试也在 CPU 上完成。
+先读 [PDF 接口与 TODO 对照表](docs/pdf_interfaces.md) 和 [课程约定、环境与阶段验收](docs/course_guide.md)。构造参数、方法名与输入输出直接对应原 PDF 的橙黄色作业框。
 
 ```sh
 # 从仓库根目录运行。设施检查不调用学生 TODO。
@@ -40,17 +40,17 @@ M4/M5 的上述命令只验证代码；正式提交还需加 `--submission` 检�
 - `generation_lab_code/`：M4 自回归采样。
 - `lab_tools/`：已经接好的命令入口，不要求从零编写工具。
 - `configs/`：debug、短训练、正式实验和原规模选做配置。
-- `templates/`：报告和小组提交清单模板。
+- `templates/`：报告和实验提交清单模板。
 - `milestone_tests/`、`tokenizer_lab_tests/`：课程验收；`tests/`：原测试与已接好的 adapters。
 - `var/`：运行结果、数据和 checkpoint，已被 Git 忽略。
 
-根目录 `test.py` 和 `tests/parallel_tokenizer.py` 是保留的早期原型，不是正式入口。原始 [作业 PDF](cs336_assignment1_basics.pdf) 可作扩展阅读；本课程以五份实验说明的必做/选做边界为准。
+根目录 `test.py` 和 `tests/parallel_tokenizer.py` 是保留的早期原型，不是正式入口。公开接口对照原始 [作业 PDF](cs336_assignment1_basics.pdf) 的橙黄色作业框；本课程以五份实验说明的必做/选做边界为准。
 
-## 提交与共享资源
+## 提交与实验记录
 
-每人 M1–M3 独立完成；M4 开始组队，从组员已通过验收的实现中选定共同基础，记录整合与复核工作。每组同时最多运行一个 GPU 作业。不要未经规划启动原规模训练或让预分词占满所有 CPU。
+每阶段保留代码版本、配置与真实运行记录。后续实验继续调用前面完成的实现。
 
-正式训练用平台发放的 tokenizer 与配套数据；本地 demo 可通过自己的 M1 实现生成。数据/tokenizer 不配套时框架会报错。规模、预算和降档规则见 [资源说明](docs/resources.md)。
+正式训练用平台发放的 tokenizer 与配套数据；本地 demo 可通过自己的 M1 实现生成。数据/tokenizer 不配套时框架会报错。配置含义和实验记录方法见 [配置说明](docs/resources.md)。配置中的数值是可调整的示例。
 
 `python -m lab_tools.submit` 会先验收再打包。不要直接运行全仓库 pytest 作为阶段验收，原测试还包含课程未要求的速度门槛与平台相关测试。
 

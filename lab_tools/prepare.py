@@ -8,8 +8,10 @@ from pathlib import Path
 import numpy as np
 
 from tokenizer_lab_code.tokenizer_lab.api import train_counts
+from tokenizer_lab_code.tokenizer_lab.common import TrainingResult
 from tokenizer_lab_code.tokenizer_lab.pretokenize import parallel_pretokenize
 from tokenizer_lab_code.tokenizer_lab.storage import file_sha256, load_model, save_model, write_json
+from tokenizer_lab_code.tokenizer_lab.tokenizer import Tokenizer
 
 EOT = "<|endoftext|>"
 
@@ -58,18 +60,29 @@ def encode_split(source, tokenizer, destination):
     )
 
 
-def prepare(tokenizer_path, train_path, valid_path, out):
+def prepare(tokenizer_path, train_path, valid_path, out, *, vocab_filepath=None, merges_filepath=None,
+            special_tokens=None):
+    """支持旧合并文件，或 PDF 的 vocab/merges 双文件；输出数据 manifest 保持兼容。"""
     out = Path(out)
     if (out / "manifest.json").exists():
         raise FileExistsError("输出已有 manifest；请选择新的输出目录")
     if Path(train_path).resolve() == Path(valid_path).resolve() or file_sha256(train_path) == file_sha256(valid_path):
         raise ValueError("训练集和验证集不能是同一份文本")
-    tokenizer = load_model(tokenizer_path)
+    if tokenizer_path is not None:
+        if vocab_filepath is not None or merges_filepath is not None or special_tokens is not None:
+            raise ValueError("合并文件与双文件参数不能混用；合并文件自带特殊 token 配置")
+        tokenizer = load_model(tokenizer_path)
+    else:
+        if vocab_filepath is None or merges_filepath is None:
+            raise ValueError("需要 tokenizer_path，或 vocab_filepath + merges_filepath")
+        tokenizer = Tokenizer.from_files(vocab_filepath, merges_filepath, special_tokens)
     if set(tokenizer.vocab) != set(range(len(tokenizer.vocab))):
         raise ValueError("训练用词表 ID 必须从 0 连续编号")
     out.mkdir(parents=True, exist_ok=True)
     target = out / "tokenizer.json"
-    if Path(tokenizer_path).resolve() != target.resolve():
+    if tokenizer_path is None:
+        save_model(target, TrainingResult(tokenizer.vocab, tokenizer.merges), special_tokens=tokenizer.special_tokens)
+    elif Path(tokenizer_path).resolve() != target.resolve():
         shutil.copyfile(tokenizer_path, target)
     manifest = dict(
         format="cs336-course-data-v1",
@@ -113,16 +126,27 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--demo", action="store_true")
     parser.add_argument("--tokenizer")
+    parser.add_argument("--vocab", help="PDF 双文件格式的词表，与 --merges 配对")
+    parser.add_argument("--merges")
+    parser.add_argument("--special-token", action="append", dest="special_tokens",
+                        help="双文件模式的特殊 token，可重复指定；默认没有")
     parser.add_argument("--train")
     parser.add_argument("--valid")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     if args.demo:
+        if any((args.tokenizer, args.vocab, args.merges, args.special_tokens, args.train, args.valid)):
+            parser.error("--demo 不与自定义输入选项混用")
         result = demo(args.out)
     else:
-        if not all((args.tokenizer, args.train, args.valid)):
-            parser.error("需要 --tokenizer、--train 和 --valid，或使用 --demo")
-        result = prepare(args.tokenizer, args.train, args.valid, args.out)
+        if not all((args.train, args.valid)):
+            parser.error("需要 --train 和 --valid，或使用 --demo")
+        if args.tokenizer and any((args.vocab, args.merges, args.special_tokens)):
+            parser.error("--tokenizer 与双文件参数不能混用")
+        if not args.tokenizer and not (args.vocab and args.merges):
+            parser.error("需要 --tokenizer，或 --vocab 与 --merges")
+        result = prepare(args.tokenizer, args.train, args.valid, args.out,
+                         vocab_filepath=args.vocab, merges_filepath=args.merges, special_tokens=args.special_tokens)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

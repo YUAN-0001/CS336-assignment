@@ -4,7 +4,7 @@
 
 文本 → M1 分词器 → token IDs → M2 Transformer → logits → M3 损失与优化器 → M4 训练/生成 → M5 优化研究。
 
-所有框架从开始就可见。每阶段只补当期 TODO，保留之前完成的代码；不要用别人的完整实现替换自己之前的任务。M4 组队后可以选择一位组员的已验收实现作为共同基础，记录选择理由、修复和交叉复核。代码来自哪位组员与谁最终提交是不同的信息，都应说明。
+所有框架从开始就可见。每阶段只补当期 TODO，保留之前完成的代码；不要用别人的完整实现替换自己之前的任务。
 
 ## 环境
 
@@ -15,7 +15,7 @@ uv run python -c "import torch; print(torch.__version__); print(torch.cuda.is_av
 uv run python -m lab_tools.check --support
 ```
 
-如果 CUDA 显示 False，M1–M3 仍可在 CPU 上完成；GPU 训练请在已分配的课程 GPU 节点运行。不要自行在共享环境中升级 torch 或修改 CUDA。M1 的轻量环境可只运行 `uv run pytest tokenizer_lab_tests/test_support.py -q`；该测试本身不导入 torch。
+如果 CUDA 显示 False，M1–M3 仍可在 CPU 上完成；需要 GPU 时使用实际可用的 CUDA 设备。M1 的轻量环境可只运行 `uv run pytest tokenizer_lab_tests/test_support.py -q`；该测试本身不导入 torch。
 
 ## 允许使用什么
 
@@ -41,11 +41,11 @@ uv run python -m lab_tools.check m4 --submission var/m4_submission/submission.js
 uv run python -m lab_tools.check m5 --submission var/m5_submission/submission.json
 ```
 
-清单中的相对路径以清单文件所在目录为起点。检查器验证文件、曲线、token 预算、数据身份等一致性，不自动判断报告质量，不保证某一 loss 就一定代表实现正确。正式实验规模以课堂发布的预算档为准；demo 通过不等于已完成正式实验。
+清单中的相对路径以清单文件所在目录为起点。检查器验证文件、曲线、训练 token 数、数据身份等一致性，不自动判断报告质量，不保证某一 loss 就一定代表实现正确。实验配置中的规模可调整；demo 通过不等于已完成正式实验。
 
 ## Git 与提交
 
-一直使用自己的工作分支即可，每阶段完成后提交 commit，也可以打 `m1-submission`、`m2-submission` 等 tag。不要直接 checkout 干净模板覆盖前面写过的文件。M4 小组仓库应保留所选实现的历史，并在报告列出整合时的 commit。
+一直使用自己的工作分支即可，每阶段完成后提交 commit，也可以打 `m1-submission`、`m2-submission` 等 tag。不要直接 checkout 干净模板覆盖前面写过的文件。报告中记录实验所用的 commit。
 
 `var/` 不会被 Git 提交。备份运行目录，尤其是 `last.pt`、`config.json`、`provenance.json`、`metrics.jsonl`、`summary.json` 和生成结果。打包工具默认不放入大数据和 checkpoint；这些文件留在课程平台供抽查。
 
@@ -54,4 +54,4 @@ uv run python -m lab_tools.submit m1 --evidence var/m1_submission --out var/m1_s
 uv run python -m lab_tools.submit m4 --submission var/m4_submission/submission.json --evidence var --out var/m4_submission.zip
 ```
 
-每人独立部分可讨论概念与排错思路，但提交自己理解的实现。小组阶段三人共同对代码和实验负责。AI 可用于解释概念/API和分析报错，不能直接生成必做 TODO 的完整答案；任何实验数据都应来自实际运行。
+提交能够解释的实现，并保留排错与修改记录。AI 可用于解释概念/API和分析报错，不能直接生成必做 TODO 的完整答案；任何实验数据都应来自实际运行。

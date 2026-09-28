@@ -1,14 +1,16 @@
-# M3：让参数学起来（个人）
+# M3：让参数学起来
+
+接口位置、PDF 页码与 TODO 迁移见 [PDF 接口对照](pdf_interfaces.md)。
 
 ## 目标
 
-M2 给出 logits；本阶段把预测误差变成标量 loss，通过 autograd 求梯度，再更新参数。只用小张量验证算法，不申请 GPU，也不开始长时间语言模型训练。
+M2 给出 logits；本阶段把预测误差变成标量 loss，通过 autograd 求梯度，再更新参数。先用小张量验证算法，再在 M4 接入完整训练。
 
 优化器的继承、参数遍历、状态字典和原地赋值已提供。你负责 O1–O5 共 5 个数学计算 TODO。
 
 ## O1：稳定交叉熵
 
-文件：[losses.py](../training_lab_code/losses.py)。输入 logits `[...,V]` 与 targets `[...]` 已整理为 `[N,V]` 和 `[N]`。
+文件：[losses.py](../training_lab_code/losses.py)。在 `cross_entropy(logits, targets)` 中完成 O1。框架将输入 logits `[...,V]` 与 targets `[...]` 整理为 `flat_logits:[N,V]` 和 `flat_targets:[N]`，将计算结果赋值给 `mean_loss`。
 
 单样本损失为 `log(sum_j exp(z_j)) - z_target`。直接计算 exp 容易溢出；设 `u=z-max(z)`，损失保持为 `log(sum_j exp(u_j)) - u_target`。用已提供的 `target_scores` 从各行取出目标分数，最后对 N 个样本求平均。不要先算 softmax 再取 log，也不要 detach。
 
@@ -30,7 +32,7 @@ parameter_new = parameter_old * (1-lr*weight_decay)
                 - alpha * m_new / (sqrt(v_new)+eps)
 ```
 
-O2 返回更新后的 m/v，O3 返回新参数。框架在 `torch.no_grad()` 中复制回参数与状态，你不需要写 `.data` 操作。没有梯度的参数会被跳过，不能给它偷偷施加 weight decay。
+O2/O3 都位于 `AdamW.step` 的参数遍历内部：O2 赋值 `m_new`、`v_new`，O3 赋值 `parameter_new`，不在 TODO 中提前 return。框架在 `torch.no_grad()` 中复制回参数与状态，你不需要写 `.data` 操作。没有梯度的参数会被跳过，不能给它偷偷施加 weight decay。
 
 注意这里 eps 的位置是本课程约定；不要从不同教程拼接多套“等价”公式，特别是较大 eps 时它们会有数值差异。
 
@@ -50,7 +52,7 @@ t 表示已经完成的优化器更新数。第一个更新使用 t=0 的学习�
 
 ## O5：全局梯度裁剪
 
-将所有参数梯度视为一个向量，其范数是 `sqrt(sum_i sum(g_i²))`。范数超过 M 时，所有梯度乘同一系数 `M/(norm+1e-6)`；否则不变。框架提供梯度收集和缩放操作。计算范数用 FP32，不要逐参数独立裁剪。
+将所有参数梯度视为一个向量，其范数是 `sqrt(sum_i sum(g_i²))`。范数超过 M 时，所有梯度乘同一系数 `M/(norm+1e-6)`；否则不变。在 `clip_gradients(parameters, max_norm)` 的 O5 中赋值 `norm`、`scale`；框架提供梯度收集、有限性检查和原地缩放操作，并返回裁剪前范数作为日志扩展。计算范数用 FP32，不要逐参数独立裁剪。
 
 ## CPU 实验与正式验收
 

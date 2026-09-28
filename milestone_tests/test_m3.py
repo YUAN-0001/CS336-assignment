@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from training_lab_code.losses import cross_entropy
-from training_lab_code.optimizer import AdamW, clip_gradients, cosine_schedule, update_moments, update_parameter
+from training_lab_code.optimizer import AdamW, clip_gradients, cosine_schedule
 
 
 def test_cross_entropy_gradient_and_batch_dims():
@@ -17,13 +17,14 @@ def test_cross_entropy_gradient_and_batch_dims():
 
 
 def test_adamw_hand_calculation():
-    grad = torch.tensor([2.0])
-    m, v = update_moments(grad, torch.zeros(1), torch.zeros(1), 0.9, 0.99)
-    torch.testing.assert_close(m, torch.tensor([0.2]))
-    torch.testing.assert_close(v, torch.tensor([0.04]))
+    parameter = torch.nn.Parameter(torch.tensor([1.0]))
+    optimizer = AdamW([parameter], lr=0.1, betas=(0.9, 0.99), eps=0.01, weight_decay=0.2)
+    parameter.grad = torch.tensor([2.0])
+    optimizer.step()
+    torch.testing.assert_close(optimizer.state[parameter]["m"], torch.tensor([0.2]))
+    torch.testing.assert_close(optimizer.state[parameter]["v"], torch.tensor([0.04]))
     # t=1, epsilon 明显非零，固定本课程的 Algorithm 1 约定。
-    actual = update_parameter(torch.tensor([1.0]), m, v, 1, 0.1, 0.9, 0.99, 0.01, 0.2)
-    torch.testing.assert_close(actual, torch.tensor([0.98 - 0.1 * 0.2 / 0.21]))
+    torch.testing.assert_close(parameter, torch.tensor([0.98 - 0.1 * 0.2 / 0.21]))
 
 
 def test_no_gradient_is_not_decayed():

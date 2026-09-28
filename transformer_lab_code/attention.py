@@ -21,17 +21,8 @@ def scaled_dot_product_attention(q, k, v, mask=None):
     raise NotImplementedError("TODO T7: scaled_dot_product_attention")
 
 
-def rotate_pairs(even, odd, cos, sin):
-    """T8：返回旋转后的两个坐标组成的 tuple。
-
-    (a, b) → (a*cos - b*sin, a*sin + b*cos)。四个输入已经可以广播。
-    只写这两条坐标公式；组合回向量的代码已提供。
-    """
-    raise NotImplementedError("TODO T8: rotate_pairs")
-
-
 class RotaryPositionalEmbedding(nn.Module):
-    def __init__(self, theta, d_k, max_seq_len, device=None):
+    def __init__(self, theta: float, d_k: int, max_seq_len: int, device=None):
         super().__init__()
         if d_k % 2 or d_k <= 0 or theta <= 0 or max_seq_len <= 0:
             raise ValueError("RoPE 要求正偶数 head_dim、正 theta 和正 context_length")
@@ -41,14 +32,21 @@ class RotaryPositionalEmbedding(nn.Module):
         self.register_buffer("cos", angles.cos(), persistent=False)
         self.register_buffer("sin", angles.sin(), persistent=False)
 
-    def forward(self, x, token_positions):
+    def forward(self, x: torch.Tensor, token_positions: torch.Tensor) -> torch.Tensor:
+        """PDF rope / T8：按 token_positions 旋转相邻坐标，保持 [...,T,Dk] 形状。
+
+        缓存、位置查询、广播和交错已提供。在 TODO 中由 even/odd/cos/sin
+        计算 rotated_even、rotated_odd；公式见 docs/m2_transformer.md。
+        """
         cos = self.cos[token_positions].to(x.dtype)
         sin = self.sin[token_positions].to(x.dtype)
         # token_positions 可为 [T] 或 [B,T]；为多头输入补充 head 广播维。
         while cos.ndim < x.ndim:
             cos, sin = cos.unsqueeze(-3), sin.unsqueeze(-3)
-        even, odd = rotate_pairs(x[..., 0::2], x[..., 1::2], cos, sin)
-        return torch.stack((even, odd), dim=-1).flatten(-2)
+        even, odd = x[..., 0::2], x[..., 1::2]
+        rotated_even = rotated_odd = None
+        raise NotImplementedError("TODO T8: RotaryPositionalEmbedding.forward — 两条旋转公式")
+        return torch.stack((rotated_even, rotated_odd), dim=-1).flatten(-2)
 
 
 def causal_mask(length, device=None):

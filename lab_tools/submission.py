@@ -32,7 +32,7 @@ def validate_run(path, allow_budget_stop=False):
         * config["training"]["gradient_accumulation"]
         * config["model"]["context_length"]
     )
-    require(summary["tokens"] == expected, "token 预算记录不符")
+    require(summary["tokens"] == expected, "训练 token 数记录不符")
     require(len(rows) >= 2 and rows[0]["step"] == 0 and rows[-1]["step"] == summary["step"], "曲线缺少起点或终点")
     require(
         all(a["step"] < b["step"] and a["wall_seconds"] <= b["wall_seconds"] for a, b in zip(rows, rows[1:])),
@@ -49,19 +49,6 @@ def validate_submission(path, stage):
     obj = read(path)
     base = path.parent
     require(obj.get("milestone") == stage, "清单 milestone 不匹配")
-    members = obj.get("members", [])
-    require(
-        len(members) == 3
-        and len(set(members)) == 3
-        and all(isinstance(m, str) and m.strip() and "填写" not in m for m in members),
-        "填写三位不同成员的姓名/学号",
-    )
-    contributions = obj.get("contributions", {})
-    require(
-        set(contributions) == set(members)
-        and all(isinstance(v, str) and len(v.strip()) >= 10 for v in contributions.values()),
-        "每人填写具体贡献及复核工作",
-    )
     for name in ("report", "curve"):
         require(name in obj and (base / obj[name]).is_file(), f"缺少 {name} 文件")
     require(len((base / obj["report"]).read_text(encoding="utf-8").strip()) >= 100, "报告内容过短")
@@ -96,10 +83,11 @@ def validate_submission(path, stage):
         require(obj.get("comparison") in ("tokens", "time"), "comparison 应为 tokens 或 time")
         require(len(obj.get("hypothesis", "").strip()) >= 10, "请填写优化假设")
         if obj["comparison"] == "tokens":
-            require(len({result[0]["tokens"] for _, result in results}) == 1, "token 对照要求相同训练 token 预算")
+            require(len({result[0]["tokens"] for _, result in results}) == 1, "token 对照要求相同训练 token 数")
         else:
             require(
-                len(obj.get("budget_explanation", "").strip()) >= 20, "时间对照需要说明统一预算、计时范围及超时处理"
+                len(obj.get("comparison_explanation", obj.get("budget_explanation", "")).strip()) >= 20,
+                "时间对照需要说明相同停止时间条件、计时范围及超时处理"
             )
             budgets = {result[2].get("time_budget_seconds") for _, result in results}
             require(

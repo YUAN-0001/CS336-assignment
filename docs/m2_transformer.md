@@ -1,10 +1,12 @@
-# M2：token 变成预测（个人）
+# M2：token 变成预测
+
+接口位置、PDF 页码与 TODO 迁移见 [PDF 接口对照](pdf_interfaces.md)。
 
 ## 本阶段要完成什么
 
 输入是整数 token IDs `[B,T]`，输出是下一 token 的 logits `[B,T,V]`。B 是 batch，T 是序列长度，V 是词表大小，D 是向量维度，H 是头数，Dh=D/H。logits 是未归一化分数；训练损失和生成采样会分别使用它，此处不在模型末尾加 softmax。
 
-本阶段不训练语言模型，不需要 GPU。M1 的词表能提供 token IDs；模型测试直接构造整数输入，帮助你只关注模型正确性。
+本阶段先验证前向计算与梯度。M1 的词表能提供 token IDs；模型测试直接构造整数输入，帮助你只关注模型正确性。
 
 ## 先读框架
 
@@ -32,7 +34,7 @@ logits [B,T,V]
 |---|---|---|
 | T1 Linear | `Y = X Wᵀ` | W 存为 `[Dout,Din]`；保留任意前导维度 |
 | T2 Embedding | 按 ID 选择权重矩阵的行 | `[B,T]` 变为 `[B,T,D]`，不是 one-hot 分类输出 |
-| T3 RMSNorm | `x / sqrt(mean(x²)+eps) * gain` | 只沿最后一维；不减均值；FP32 转换已提供 |
+| T3 RMSNorm.forward | `x / sqrt(mean(x²)+eps) * gain` | 只沿最后一维；不减均值；FP32 转换已提供 |
 | T4 SiLU | `x * sigmoid(x)` | 可使用 torch.sigmoid |
 | T5 SwiGLU | `w2(SiLU(w1(x)) * w3(x))` | 中间乘法逐元素进行；输出维度回到 D |
 | T6 Softmax | `exp(x-max(x))/sum(exp(x-max(x)))` | 沿传入 dim；归约时保留维度以便广播 |
@@ -58,7 +60,7 @@ T9 构造因果 mask：第 i 行允许第 0 到第 i 列。当前位置能够看
 
 多头拆分已提供：`[B,T,D] → [B,H,T,Dh]`。各头并行做 Attention 后恢复 `[B,T,D]`，再经过输出投影。Q/K/V 是投影后的激活，投影矩阵才是参数。
 
-RoPE 把每对坐标 `(a,b)` 按位置旋转：`(a cosθ-b sinθ, a sinθ+b cosθ)`。T8 只补这两条公式，缓存、按位置查询、广播和重新交错已提供。旋转只用于 Q、K，不用于 V；每头使用相同位置规则，旋转维度为 Dh。
+RoPE 把每对坐标 `(a,b)` 按位置旋转：`(a cosθ-b sinθ, a sinθ+b cosθ)`。T8 位于 `RotaryPositionalEmbedding.forward`，只补 `rotated_even` 与 `rotated_odd` 两条公式；缓存、按位置查询、广播和重新交错已提供。旋转只用于 Q、K，不用于 V；每头使用相同位置规则，旋转维度为 Dh。
 
 ```sh
 uv run pytest tests/test_model.py -k "attention or rope" -q
@@ -66,7 +68,7 @@ uv run pytest tests/test_model.py -k "attention or rope" -q
 
 ## 第三关：完整模型 T10–T11
 
-修改 [model.py](../transformer_lab_code/model.py)。T10 写两段 pre-norm 残差；第二段处理第一段得到的 y。T11 用 embedding 开始，顺序遍历 layers，经最终 norm 和 lm_head 返回 logits。不要 detach、转成 numpy，或在 forward 中重新创建参数。
+修改 [model.py](../transformer_lab_code/model.py)。直接用 `TransformerBlock(d_model, num_heads, d_ff, ...)` 和 `TransformerLM(vocab_size, context_length, d_model, num_layers, num_heads, d_ff, ...)` 构造模块，不需要先创建 ModelConfig。T10 在 `TransformerBlock.forward` 写两段 pre-norm 残差；第二段处理第一段得到的 y。T11 在 `TransformerLM.forward` 中用 embedding 开始，顺序遍历 layers，经最终 norm 和 lm_head 返回 logits。不要 detach、转成 numpy，或在 forward 中重新创建参数。
 
 ```sh
 uv run python -m lab_tools.check m2

@@ -1,4 +1,4 @@
-"""已提供：内存映射、数据身份与 batch 搬运。S1 在 student.py。"""
+"""PDF data_loading：S1 位于 get_batch；内存映射、随机采样和设备搬运已提供。"""
 
 import json
 from pathlib import Path
@@ -8,22 +8,33 @@ import torch
 
 from tokenizer_lab_code.tokenizer_lab.storage import file_sha256
 
-from .student import shifted_windows
+def get_batch(data, batch_size, context_length, device="cpu", *, starts=None):
+    """numpy 一维 token 数组 → (x,y)，均为指定设备上的 long [B,T]。
 
-
-def get_batch(data, batch_size, context_length, device="cpu"):
+    S1：对每个起点 s，x=data[s:s+T]、y=data[s+1:s+T+1]，堆叠为两个 numpy 数组。
+    在 TODO 中赋值 x、y；索引合法性、随机起点和设备搬运已提供。
+    starts 是教师验证入口使用的可选固定起点；按 PDF 调用时无需传入。
+    """
     if data.ndim != 1 or len(data) <= context_length or batch_size <= 0 or context_length <= 0:
         raise ValueError("数据长度必须大于 context_length，且 batch_size/context_length 为正")
-    starts = np.random.randint(0, len(data) - context_length, size=batch_size)
-    return batch_at(data, starts, context_length, device)
-
-
-def batch_at(data, starts, context_length, device):
-    x, y = shifted_windows(data, starts, context_length)
+    if starts is None:
+        starts = np.random.randint(0, len(data) - context_length, size=batch_size)
+    else:
+        starts = np.asarray(starts)
+        if (starts.shape != (batch_size,) or starts.dtype.kind not in "iu"
+                or np.any(starts < 0) or np.any(starts >= len(data) - context_length)):
+            raise ValueError("starts 必须包含 batch_size 个合法整数起点")
+    x = y = None
+    raise NotImplementedError("TODO S1: get_batch — 构造输入和 next-token 目标窗口")
     return (
         torch.as_tensor(np.array(x, dtype=np.int64), device=device),
         torch.as_tensor(np.array(y, dtype=np.int64), device=device),
     )
+
+
+def batch_at(data, starts, context_length, device):
+    """教师提供：确定性验证仍复用学生的同一个 get_batch 实现。"""
+    return get_batch(data, len(starts), context_length, device, starts=starts)
 
 
 class Dataset:
