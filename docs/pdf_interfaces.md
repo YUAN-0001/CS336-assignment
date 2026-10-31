@@ -8,8 +8,8 @@
 
 | 阶段 | PDF 问题名／页码 | 文件与公开入口 | 学生填写位置 |
 |---|---|---|---|
-| M1 | train_bpe／9 | [api.py](../tokenizer_lab_code/tokenizer_lab/api.py)：`train_bpe(input_path, vocab_size, special_tokens)` → `(vocab, merges)` | [naive.py](../tokenizer_lab_code/tokenizer_lab/naive.py) A1–A4；完整训练调度与预分词已提供 |
-| M1 | tokenizer／11–12 | [tokenizer.py](../tokenizer_lab_code/tokenizer_lab/tokenizer.py)：`Tokenizer(vocab, merges, special_tokens=None)` | C1 编码普通 pre-token，C2 `decode`；特殊 token 与正则外围已提供 |
+| M1 | train_bpe／9 | [api.py](../tokenizer_lab_code/api.py)：`train_bpe(input_path, vocab_size, special_tokens)` → `(vocab, merges)` | [naive.py](../tokenizer_lab_code/naive.py) A1–A4；完整训练调度与预分词已提供 |
+| M1 | tokenizer／11–12 | [tokenizer.py](../tokenizer_lab_code/tokenizer.py)：`Tokenizer(vocab, merges, special_tokens=None)` | C1 编码普通 pre-token，C2 `decode`；特殊 token 与正则外围已提供 |
 | M1 | tokenizer／12 | `Tokenizer.from_files(vocab_filepath, merges_filepath, special_tokens=None)`、`encode`、`encode_iterable` | 文件读取及迭代入口已提供，调用同一份学生编码算法 |
 | M2 | linear／18 | [layers.py](../transformer_lab_code/layers.py)：`Linear(in_features, out_features, device=None, dtype=None)` | T1 `forward(x)`；无 bias |
 | M2 | embedding／18–19 | 同文件：`Embedding(num_embeddings, embedding_dim, device=None, dtype=None)` | T2 `forward(token_ids)` |
@@ -38,8 +38,8 @@
 完成 A/C 后，从仓库根目录运行以下 Python 代码。切换 `variant="incremental"` 即使用选做 B 版，输入输出不变。
 
 ```python
-from tokenizer_lab_code.tokenizer_lab import Tokenizer, train_bpe
-from tokenizer_lab_code.tokenizer_lab.storage import save_vocab_merges
+from tokenizer_lab_code import Tokenizer, train_bpe
+from tokenizer_lab_code.storage import save_vocab_merges
 
 vocab, merges = train_bpe(
     input_path="tokenizer_lab_data/tiny.txt",
@@ -64,7 +64,7 @@ assert tokenizer.decode(ids) == "你好，world！"
 CLI 原命令继续可用，同时可导出 PDF 双文件：
 
 ```sh
-python -m tokenizer_lab_code.tokenizer_lab.cli train --input tokenizer_lab_data/tiny.txt --variant naive --vocab-size 280 --output var/m1/tokenizer.json --vocab-output var/m1/vocab.json --merges-output var/m1/merges.json
+python -m tokenizer_lab_code.cli train --input tokenizer_lab_data/tiny.txt --variant naive --vocab-size 280 --output var/m1/tokenizer.json --vocab-output var/m1/vocab.json --merges-output var/m1/merges.json
 python -m lab_tools.prepare --vocab var/m1/vocab.json --merges var/m1/merges.json --special-token '<|endoftext|>' --train data/train.txt --valid data/valid.txt --out var/tokenized_data
 ```
 

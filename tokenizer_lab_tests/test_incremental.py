@@ -5,8 +5,8 @@ from collections import Counter
 
 import pytest
 
-from tokenizer_lab_code.tokenizer_lab import incremental, naive
-from tokenizer_lab_code.tokenizer_lab.common import Word
+from tokenizer_lab_code import incremental, naive
+from tokenizer_lab_code.common import Word
 
 pytestmark = pytest.mark.lab_b
 

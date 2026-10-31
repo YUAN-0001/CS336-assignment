@@ -7,11 +7,11 @@ from pathlib import Path
 
 import numpy as np
 
-from tokenizer_lab_code.tokenizer_lab.api import train_counts
-from tokenizer_lab_code.tokenizer_lab.common import TrainingResult
-from tokenizer_lab_code.tokenizer_lab.pretokenize import parallel_pretokenize
-from tokenizer_lab_code.tokenizer_lab.storage import file_sha256, load_model, save_model, write_json
-from tokenizer_lab_code.tokenizer_lab.tokenizer import Tokenizer
+from tokenizer_lab_code.api import train_counts
+from tokenizer_lab_code.common import TrainingResult
+from tokenizer_lab_code.pretokenize import parallel_pretokenize
+from tokenizer_lab_code.storage import file_sha256, load_model, save_model, write_json
+from tokenizer_lab_code.tokenizer import Tokenizer
 
 EOT = "<|endoftext|>"
 

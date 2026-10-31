@@ -4,8 +4,8 @@ from collections import Counter
 
 import pytest
 
-from tokenizer_lab_code.tokenizer_lab.common import TrainingResult, Word
-from tokenizer_lab_code.tokenizer_lab.naive import count_pairs, merge_sequence, record_merge, select_pair, train
+from tokenizer_lab_code.common import TrainingResult, Word
+from tokenizer_lab_code.naive import count_pairs, merge_sequence, record_merge, select_pair, train
 
 pytestmark = pytest.mark.lab_a
 

@@ -11,15 +11,15 @@
 ## 步骤
 
 1. 阅读 `Word(tokens, frequency)`：一个 pre-token 在语料中出现多少次，与其中某个 pair 出现多少次是两回事。
-2. 完成 [naive.py](../tokenizer_lab_code/tokenizer_lab/naive.py) 中 A1 加权计数、A2 选 pair、A3 非重叠合并、A4 登记。
-3. 完成 [tokenizer.py](../tokenizer_lab_code/tokenizer_lab/tokenizer.py) 中 C1 按 merge rank 编码、C2 拼接 bytes 后解码。
+2. 完成 [naive.py](../tokenizer_lab_code/naive.py) 中 A1 加权计数、A2 选 pair、A3 非重叠合并、A4 登记。
+3. 完成 [tokenizer.py](../tokenizer_lab_code/tokenizer.py) 中 C1 按 merge rank 编码、C2 拼接 bytes 后解码。
 4. 在 tiny 语料训练词表，记录前几次合并；解释重复字符、频次平局、中文和特殊 token。
 5. 正式验收，不要求先完成增量优化。
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input tokenizer_lab_data/tiny.txt --output var/m1/counts.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/counts.json --variant naive --vocab-size 280 --trace --output var/m1/tokenizer.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli encode --model var/m1/tokenizer.json --text "你好，hello world!🙂"
+uv run python -m tokenizer_lab_code.cli pretokenize --input tokenizer_lab_data/tiny.txt --output var/m1/counts.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/counts.json --variant naive --vocab-size 280 --trace --output var/m1/tokenizer.json
+uv run python -m tokenizer_lab_code.cli encode --model var/m1/tokenizer.json --text "你好，hello world!🙂"
 uv run python -m lab_tools.check m1
 ```
 
@@ -35,7 +35,7 @@ uv run python -m lab_tools.check m1
 
 ## 最后再做：进阶与耗时任务
 
-- B 版：补齐 [incremental.py](../tokenizer_lab_code/tokenizer_lab/incremental.py)，运行 `uv run pytest tokenizer_lab_tests/test_incremental.py -q`；在同一缓存上逐轮比较 A/B。
+- B 版：补齐 [incremental.py](../tokenizer_lab_code/incremental.py)，运行 `uv run pytest tokenizer_lab_tests/test_incremental.py -q`；在同一缓存上逐轮比较 A/B。
 - 先 correctness，再关闭 debug 测性能；样本级运行三次，比较预处理和 BPE 训练的分项耗时。
 - 更大样本、10K/32K 词表、全量编码均非本阶段必做。不要用朴素版直接开始全量语料训练。
 
@@ -73,10 +73,10 @@ gzip -dk data/owt_valid.txt.gz
 **A 版名称是 `naive`，B 版名称是 `incremental`。** 两版使用同一份缓存、同一词表目标和共用的编码器。B 版仍会调用 A 版的基础函数，所以应先完成 A1–A4，再完成 B1–B3。
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input tests/fixtures/tinystories_sample.txt --workers 1 --special-token '<|endoftext|>' --output var/m1/sample-counts.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/sample-counts.json --variant naive --vocab-size 500 --trace --output var/m1/sample-A.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/sample-counts.json --variant incremental --vocab-size 500 --trace --output var/m1/sample-B.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli compare --cache var/m1/sample-counts.json --vocab-size 500 --debug --output var/m1/sample-check.json
+uv run python -m tokenizer_lab_code.cli pretokenize --input tests/fixtures/tinystories_sample.txt --workers 1 --special-token '<|endoftext|>' --output var/m1/sample-counts.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/sample-counts.json --variant naive --vocab-size 500 --trace --output var/m1/sample-A.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/sample-counts.json --variant incremental --vocab-size 500 --trace --output var/m1/sample-B.json
+uv run python -m tokenizer_lab_code.cli compare --cache var/m1/sample-counts.json --vocab-size 500 --debug --output var/m1/sample-check.json
 ```
 
 `compare` 会执行两版并核对每轮 pair、频次及最终 vocab/merges。测速度时去掉 `--debug`，加上 `--repeats 3`。完整语料不要用 `compare` 起步，它会把慢的 A 版也完整跑一遍。
@@ -88,23 +88,23 @@ uv run python -m tokenizer_lab_code.tokenizer_lab.cli compare --cache var/m1/sam
 使用naive版代码：
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input data/TinyStoriesV2-GPT4-train.txt --workers 2 --special-token '<|endoftext|>' --output var/m1/tinystories-counts.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/tinystories-counts.json --variant naive --vocab-size 10000 --output var/m1/tinystories-B-10k.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli encode --model var/m1/tinystories-B-10k.json --text 'Once upon a time, there was a little rabbit.<|endoftext|>'
+uv run python -m tokenizer_lab_code.cli pretokenize --input data/TinyStoriesV2-GPT4-train.txt --workers 2 --special-token '<|endoftext|>' --output var/m1/tinystories-counts.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/tinystories-counts.json --variant naive --vocab-size 10000 --output var/m1/tinystories-B-10k.json
+uv run python -m tokenizer_lab_code.cli encode --model var/m1/tinystories-B-10k.json --text 'Once upon a time, there was a little rabbit.<|endoftext|>'
 ```
 
 使用incremental版代码：
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input data/TinyStoriesV2-GPT4-train.txt --workers 2 --special-token '<|endoftext|>' --output var/m1/tinystories-counts.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/tinystories-counts.json --variant incremental --vocab-size 10000 --output var/m1/tinystories-B-10k.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli encode --model var/m1/tinystories-B-10k.json --text 'Once upon a time, there was a little rabbit.<|endoftext|>'
+uv run python -m tokenizer_lab_code.cli pretokenize --input data/TinyStoriesV2-GPT4-train.txt --workers 2 --special-token '<|endoftext|>' --output var/m1/tinystories-counts.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/tinystories-counts.json --variant incremental --vocab-size 10000 --output var/m1/tinystories-B-10k.json
+uv run python -m tokenizer_lab_code.cli encode --model var/m1/tinystories-B-10k.json --text 'Once upon a time, there was a little rabbit.<|endoftext|>'
 ```
 
 第一步不调用学生 TODO；第二步要求 A/B 已完成；第三步还要求 C1–C2 已完成。如果只想从原始文本一次完成训练，也可以用以下等价入口，**无需把两种方式都跑一遍**：
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --input data/TinyStoriesV2-GPT4-train.txt --workers 2 --special-token '<|endoftext|>' --variant incremental --vocab-size 10000 --output var/m1/tinystories-B-10k-direct.json
+uv run python -m tokenizer_lab_code.cli train --input data/TinyStoriesV2-GPT4-train.txt --workers 2 --special-token '<|endoftext|>' --variant incremental --vocab-size 10000 --output var/m1/tinystories-B-10k-direct.json
 ```
 
 ### 4. OpenWebText：训练 32K 词表
@@ -112,15 +112,15 @@ uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --input data/TinySto
 完成 TinyStories 并确认内存占用后，再运行 OWT。建议确认incremental版效率后，只使用incremental版进行训练。
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input data/owt_train.txt --workers 2 --special-token '<|endoftext|>' --output var/m1/owt-counts.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/owt-counts.json --variant incremental --vocab-size 32000 --output var/m1/owt-B-32k.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli encode --model var/m1/owt-B-32k.json --text 'A tokenizer converts text into a sequence of token IDs.<|endoftext|>'
+uv run python -m tokenizer_lab_code.cli pretokenize --input data/owt_train.txt --workers 2 --special-token '<|endoftext|>' --output var/m1/owt-counts.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/owt-counts.json --variant incremental --vocab-size 32000 --output var/m1/owt-B-32k.json
+uv run python -m tokenizer_lab_code.cli encode --model var/m1/owt-B-32k.json --text 'A tokenizer converts text into a sequence of token IDs.<|endoftext|>'
 ```
 
 要对这两份缓存运行 A 版，只需将训练命令中的 `--variant incremental` 改为 `--variant naive`，同时将输出文件名中的 `B` 改为 `A`，其他参数保持一致。例如 TinyStories 为：
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/tinystories-counts.json --variant naive --vocab-size 10000 --output var/m1/tinystories-A-10k.json
+uv run python -m tokenizer_lab_code.cli train --cache var/m1/tinystories-counts.json --variant naive --vocab-size 10000 --output var/m1/tinystories-A-10k.json
 ```
 
 这说明调用方式，并不要求运行全量 A 版。A 版每轮重新扫描全部 pre-token，通常应只在样本上作为正确性参照。只完成 A/C 的同学仍可完成 M1 必做任务。
@@ -138,9 +138,9 @@ uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/tinys
 Python 文件示例（放在仓库根目录，用 `uv run python 文件名.py` 运行）：
 
 ```python
-from tokenizer_lab_code.tokenizer_lab.api import train_bpe
-from tokenizer_lab_code.tokenizer_lab import Tokenizer
-from tokenizer_lab_code.tokenizer_lab.storage import save_vocab_merges
+from tokenizer_lab_code.api import train_bpe
+from tokenizer_lab_code import Tokenizer
+from tokenizer_lab_code.storage import save_vocab_merges
 
 if __name__ == "__main__":  # 多进程入口保护，Windows 下也需要
     variant = "incremental"  # 换成 "naive" 即调用 A 版
@@ -171,7 +171,7 @@ PDF 风格的直接调用使用 `save_vocab_merges` 与 `Tokenizer.from_files`�
 
 ```python
 import sys
-from tokenizer_lab_code.tokenizer_lab.storage import load_model
+from tokenizer_lab_code.storage import load_model
 
 tokenizer = load_model(sys.argv[1])
 specials = {s.encode("utf-8") for s in tokenizer.special_tokens}
@@ -191,7 +191,7 @@ print("UTF-8 preview:", raw.decode("utf-8", errors="replace"))
 在课程 Linux 上，可在同一命令前加 `/usr/bin/time -v` 记录整条命令的耗时和最大常驻内存；预处理和训练分别测。示例：
 
 ```sh
-/usr/bin/time -v -o var/m1/tinystories-B-10k-resource.txt uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/m1/tinystories-counts.json --variant incremental --vocab-size 10000 --output var/m1/tinystories-B-10k.json
+/usr/bin/time -v -o var/m1/tinystories-B-10k-resource.txt uv run python -m tokenizer_lab_code.cli train --cache var/m1/tinystories-counts.json --variant incremental --vocab-size 10000 --output var/m1/tinystories-B-10k.json
 ```
 
 该示例会重新训练，正式运行时用它替换前面的训练命令即可。GNU time 的 Maximum resident set size 单位为 KiB，多进程预处理时不能将它视为所有并发进程内存的精确总和；整体峰值以平台作业监控为准。定位瓶颈可以在小样本上把 `python -m ...` 改为 `python -m cProfile -o var/m1/bpe.prof -m ...`，性能比较不要混入 profiling 或 `--debug` 的开销。

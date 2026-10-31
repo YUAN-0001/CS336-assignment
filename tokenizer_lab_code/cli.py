@@ -1,4 +1,4 @@
-"""CPU-only 教学入口：python -m tokenizer_lab_code.tokenizer_lab.cli --help。"""
+"""CPU-only 教学入口：python -m tokenizer_lab_code.cli --help。"""
 
 import argparse
 import json

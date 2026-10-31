@@ -6,9 +6,11 @@
 
 ## 从哪里开始
 
+作业说明 PDF：[中文翻译版](cs336_assignment1_basics_zh_cn.pdf) · [英文原版](cs336_assignment1_basics.pdf)。阅读时可结合下方各阶段实验说明；本课程的必做与选做范围以五份实验说明为准。
+
 | 阶段 | 实验说明 | 待填写代码 | 阶段能力 |
 |---|---|---|---|
-| M1 文本变成 token | [M1](docs/m1_tokenizer.md) | [A版](tokenizer_lab_code/tokenizer_lab/naive.py)、[编码器](tokenizer_lab_code/tokenizer_lab/tokenizer.py) | 小语料 BPE 训练、编码解码 |
+| M1 文本变成 token | [M1](docs/m1_tokenizer.md) | [A版](tokenizer_lab_code/naive.py)、[编码器](tokenizer_lab_code/tokenizer.py) | 小语料 BPE 训练、编码解码 |
 | M2 token 变成预测 | [M2](docs/m2_transformer.md) | [基础层](transformer_lab_code/layers.py)、[Attention](transformer_lab_code/attention.py)、[模型](transformer_lab_code/model.py) | Transformer 前向、因果性与梯度 |
 | M3 让参数学习 | [M3](docs/m3_optimization.md) | [损失](training_lab_code/losses.py)、[优化器](training_lab_code/optimizer.py) | 交叉熵、AdamW、调度、裁剪 |
 | M4 训练并生成 | [M4](docs/m4_training.md) | [数据采样](training_lab_code/data.py)、[训练核心](training_lab_code/student.py)、[采样](generation_lab_code/sampling.py) | 可恢复训练、验证、文本生成 |

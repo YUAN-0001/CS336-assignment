@@ -2,11 +2,11 @@
 
 本实验是课程教师在 CS336 Assignment 1 上添加的教学框架。环境已经配置完成；本部分只使用 CPU，不申请 GPU。必做为 A1–A4、C1–C2 共 6 个 TODO；B1–B3 是增量优化选做。课程阶段入口见 [M1](m1_tokenizer.md)。工程设施由教师提供，不要求你从空文件开始写。
 
-**待补充代码统一位于 `tokenizer_lab_code/tokenizer_lab/`。** 从下面三个文件开始：
+**待补充代码统一位于 `tokenizer_lab_code/`。** 从下面三个文件开始：
 
-- [naive.py：A 版，填写 A1–A4](../tokenizer_lab_code/tokenizer_lab/naive.py)
-- [incremental.py：B 版，填写 B1–B3](../tokenizer_lab_code/tokenizer_lab/incremental.py)
-- [tokenizer.py：共用编码器，填写 C1–C2](../tokenizer_lab_code/tokenizer_lab/tokenizer.py)
+- [naive.py：A 版，填写 A1–A4](../tokenizer_lab_code/naive.py)
+- [incremental.py：B 版，填写 B1–B3](../tokenizer_lab_code/incremental.py)
+- [tokenizer.py：共用编码器，填写 C1–C2](../tokenizer_lab_code/tokenizer.py)
 
 本说明位于仓库的 `docs/tokenizer_lab.md`；测试仍在 `tokenizer_lab_tests/`，小语料仍在 `tokenizer_lab_data/`。以下命令均从仓库根目录执行，不需要进入代码子目录。
 
@@ -23,9 +23,9 @@
 
 | 文件 | 用途 | 是否需要修改 |
 |---|---|---|
-| `tokenizer_lab_code/tokenizer_lab/naive.py` | A 版全量统计与主循环 | 只填 A1–A4 |
-| `tokenizer_lab_code/tokenizer_lab/incremental.py` | B 版局部更新与主循环 | 只填 B1–B3 |
-| `tokenizer_lab_code/tokenizer_lab/tokenizer.py` | 两版共用的编码与解码 | 只填 C1–C2 |
+| `tokenizer_lab_code/naive.py` | A 版全量统计与主循环 | 只填 A1–A4 |
+| `tokenizer_lab_code/incremental.py` | B 版局部更新与主循环 | 只填 B1–B3 |
+| `tokenizer_lab_code/tokenizer.py` | 两版共用的编码与解码 | 只填 C1–C2 |
 | `common.py` | 数据结构、初始化、局部 pair 计数 | 教师提供 |
 | `pretokenize.py` | 特殊 token、正则预分词、CPU 并行 | 教师提供 |
 | `agenda.py` | 最佳 pair 的优先队列、过期条目清理 | 教师提供 |
@@ -33,7 +33,7 @@
 | `tokenizer_lab_tests/` | 分层测试；不依赖 PyTorch | 运行即可 |
 | `tokenizer_lab_data/tiny.txt` | 首次实验用的小语料，含中文/emoji | 可以观察 |
 
-表中的 `common.py`、`pretokenize.py`、`agenda.py`、`storage.py`、`cli.py` 和 `api.py` 也都位于 `tokenizer_lab_code/tokenizer_lab/`。
+表中的 `common.py`、`pretokenize.py`、`agenda.py`、`storage.py`、`cli.py` 和 `api.py` 也都位于 `tokenizer_lab_code/`。
 
 仓库根目录的 `test.py` 和 `tests/parallel_tokenizer.py` 是教师早期原型，保留供参考；正式实验使用上表入口。不要直接运行原型中的完整 TinyStories 训练来开始本实验。
 
@@ -122,7 +122,7 @@ uv run pytest tokenizer_lab_tests/test_support.py -q
 ### 7.2 生成两版共用的预分词缓存
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input tokenizer_lab_data/tiny.txt --output var/tokenizer_lab/tiny-counts.json
+uv run python -m tokenizer_lab_code.cli pretokenize --input tokenizer_lab_data/tiny.txt --output var/tokenizer_lab/tiny-counts.json
 ```
 
 使用 `--workers` 设置预分词进程数，例如 `--workers 2`。多个特殊 token 或没有特殊 token 时会保守退回串行；仅有一个特殊 token 时才沿该边界并行切块。单进程/单块会将对应文本块读入内存，本框架不承诺常数内存的全量预处理。
@@ -133,7 +133,7 @@ uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input tokeni
 
 ```sh
 uv run pytest tokenizer_lab_tests/test_naive.py -q
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/tokenizer_lab/tiny-counts.json --variant naive --vocab-size 280 --trace --output var/tokenizer_lab/naive.json
+uv run python -m tokenizer_lab_code.cli train --cache var/tokenizer_lab/tiny-counts.json --variant naive --vocab-size 280 --trace --output var/tokenizer_lab/naive.json
 ```
 
 如提前没有可合并的 pair，实际词表可能小于 280。请检查模型文件中十六进制表示的 vocab、merges 和 trace，解释前几轮合并。
@@ -142,14 +142,14 @@ uv run python -m tokenizer_lab_code.tokenizer_lab.cli train --cache var/tokenize
 
 ```sh
 uv run pytest tokenizer_lab_tests/test_tokenizer.py -q
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli encode --model var/tokenizer_lab/naive.json --text "你好，hello world!🙂"
+uv run python -m tokenizer_lab_code.cli encode --model var/tokenizer_lab/naive.json --text "你好，hello world!🙂"
 ```
 
 ### 7.5 完成 B 版，先核对正确性
 
 ```sh
 uv run pytest tokenizer_lab_tests/test_incremental.py -q
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli compare --cache var/tokenizer_lab/tiny-counts.json --vocab-size 280 --debug --output var/tokenizer_lab/check.json
+uv run python -m tokenizer_lab_code.cli compare --cache var/tokenizer_lab/tiny-counts.json --vocab-size 280 --debug --output var/tokenizer_lab/check.json
 ```
 
 compare 对照每一轮选中的 pair、频次、最终 vocab 和 merges；不一致时报告首个不同的轮次。局部序列与计数的一致性由 B 版 debug 检查辅助定位。
@@ -157,8 +157,8 @@ compare 对照每一轮选中的 pair、频次、最终 vocab 和 merges；不�
 ### 7.6 测量性能
 
 ```sh
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli pretokenize --input tests/fixtures/tinystories_sample.txt --output var/tokenizer_lab/sample-counts.json
-uv run python -m tokenizer_lab_code.tokenizer_lab.cli compare --cache var/tokenizer_lab/sample-counts.json --vocab-size 500 --repeats 3 --output var/tokenizer_lab/benchmark.json
+uv run python -m tokenizer_lab_code.cli pretokenize --input tests/fixtures/tinystories_sample.txt --output var/tokenizer_lab/sample-counts.json
+uv run python -m tokenizer_lab_code.cli compare --cache var/tokenizer_lab/sample-counts.json --vocab-size 500 --repeats 3 --output var/tokenizer_lab/benchmark.json
 ```
 
 此时不要加 `--debug`。输入准备时间单独报告；两版交替运行顺序并使用相同缓存、词表目标和轻量 trace。先用小样本完成上述流程，再由教师决定是否使用 5MB 样本或更大语料。小数据上的优化版可能更慢；不能预设必须获得某个固定加速倍数。

@@ -18,9 +18,9 @@ from training_lab_code.optimizer import AdamW
 from training_lab_code.data import get_batch
 from training_lab_code.student import train_step, weighted_validation_loss
 from transformer_lab_code.model import ModelConfig, TransformerLM
-from tokenizer_lab_code.tokenizer_lab.common import TrainingResult
-from tokenizer_lab_code.tokenizer_lab.storage import load_model, save_model, save_vocab_merges
-from tokenizer_lab_code.tokenizer_lab.tokenizer import Tokenizer
+from tokenizer_lab_code.common import TrainingResult
+from tokenizer_lab_code.storage import load_model, save_model, save_vocab_merges
+from tokenizer_lab_code.tokenizer import Tokenizer
 
 
 def test_pdf_files_prepare_preserves_ids(tmp_path):

@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 
-from tokenizer_lab_code.tokenizer_lab import incremental, naive
-from tokenizer_lab_code.tokenizer_lab.agenda import PairAgenda
-from tokenizer_lab_code.tokenizer_lab.common import TrainingResult, adjacent_pairs, initialize
-from tokenizer_lab_code.tokenizer_lab.pretokenize import _find_chunk_boundaries, parallel_pretokenize, split_special
-from tokenizer_lab_code.tokenizer_lab.storage import load_cache, load_model, save_cache, save_model
+from tokenizer_lab_code import incremental, naive
+from tokenizer_lab_code.agenda import PairAgenda
+from tokenizer_lab_code.common import TrainingResult, adjacent_pairs, initialize
+from tokenizer_lab_code.pretokenize import _find_chunk_boundaries, parallel_pretokenize, split_special
+from tokenizer_lab_code.storage import load_cache, load_model, save_cache, save_model
 
 pytestmark = pytest.mark.lab_support
 
@@ -76,7 +76,7 @@ def test_boundary_token_straddles_search_block(tmp_path):
 def test_overlapping_specials_fall_back_safely(tmp_path, monkeypatch):
     p = tmp_path / "input.txt"
     p.write_text("aaX<a>Ybb<a>cc", encoding="utf-8")
-    import tokenizer_lab_code.tokenizer_lab.pretokenize as module
+    import tokenizer_lab_code.pretokenize as module
 
     def forbidden_pool(*args, **kwargs):
         raise AssertionError("多特殊 token 不应进入未经证明安全的物理切块路径")
@@ -179,7 +179,7 @@ def test_teacher_loops_with_one_handwritten_transition(monkeypatch):
 def test_cli_pretokenize_and_zero_merge_training(tmp_path):
     root = Path(__file__).resolve().parents[1]
     cache = tmp_path / "cache.json"
-    prefix = [sys.executable, "-m", "tokenizer_lab_code.tokenizer_lab.cli"]
+    prefix = [sys.executable, "-m", "tokenizer_lab_code.cli"]
     p = subprocess.run(
         prefix + ["pretokenize", "--input", "tokenizer_lab_data/tiny.txt", "--output", str(cache)],
         cwd=root,

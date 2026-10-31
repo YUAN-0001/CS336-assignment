@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from tokenizer_lab_code.tokenizer_lab.storage import file_sha256
+from tokenizer_lab_code.storage import file_sha256
 
 def get_batch(data, batch_size, context_length, device="cpu", *, starts=None):
     """numpy 一维 token 数组 → (x,y)，均为指定设备上的 long [B,T]。

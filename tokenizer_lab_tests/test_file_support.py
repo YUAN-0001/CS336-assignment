@@ -3,10 +3,10 @@ import json
 
 import pytest
 
-from tokenizer_lab_code.tokenizer_lab import Tokenizer, train_bpe
-from tokenizer_lab_code.tokenizer_lab.cli import parser, run
-from tokenizer_lab_code.tokenizer_lab.common import TrainingResult
-from tokenizer_lab_code.tokenizer_lab.storage import load_model, save_model, save_vocab_merges
+from tokenizer_lab_code import Tokenizer, train_bpe
+from tokenizer_lab_code.cli import parser, run
+from tokenizer_lab_code.common import TrainingResult
+from tokenizer_lab_code.storage import load_model, save_model, save_vocab_merges
 
 
 def test_from_files_preserves_bytes_ids_and_order(tmp_path):

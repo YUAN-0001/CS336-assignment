@@ -2,7 +2,7 @@
 
 import pytest
 
-from tokenizer_lab_code.tokenizer_lab.tokenizer import Tokenizer
+from tokenizer_lab_code.tokenizer import Tokenizer
 
 pytestmark = pytest.mark.lab_c
 

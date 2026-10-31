@@ -5,7 +5,7 @@ import argparse
 import torch
 
 from generation_lab_code.sampling import generate
-from tokenizer_lab_code.tokenizer_lab.storage import load_model, write_json
+from tokenizer_lab_code.storage import load_model, write_json
 from training_lab_code.checkpoint import read_checkpoint
 from training_lab_code.data import Dataset
 from transformer_lab_code.model import TransformerLM

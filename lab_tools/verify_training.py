@@ -6,7 +6,7 @@ from pathlib import Path
 
 import torch
 
-from tokenizer_lab_code.tokenizer_lab.storage import write_json
+from tokenizer_lab_code.storage import write_json
 from training_lab_code.checkpoint import load_checkpoint, save_checkpoint
 from training_lab_code.data import Dataset, get_batch
 from training_lab_code.optimizer import AdamW

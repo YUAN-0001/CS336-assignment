@@ -1,6 +1,6 @@
 """直接按 PDF 调用公开接口，不经 tests.adapters；完成 A/C 后运行。"""
-from tokenizer_lab_code.tokenizer_lab import Tokenizer, train_bpe
-from tokenizer_lab_code.tokenizer_lab.storage import save_vocab_merges
+from tokenizer_lab_code import Tokenizer, train_bpe
+from tokenizer_lab_code.storage import save_vocab_merges
 
 
 def test_pdf_train_save_load_encode_decode(tmp_path):
