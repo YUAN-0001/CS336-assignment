@@ -6,8 +6,8 @@ import torch  # noqa: F401 -- O1 可使用 torch 操作
 def cross_entropy(logits, targets):
     """PDF cross_entropy / O1：logits [...,V]、targets [...] → 平均损失标量。
 
-    形状整理已提供；在 TODO 中使用 flat_logits / flat_targets 计算 mean_loss。
-    减去每行最大值，再计算 log(sum(exp(shifted))) - target_scores(shifted, flat_targets)。
+    L = (1/N) Σ_n [log(Σ_j exp(z_nj - m_n)) - (z_n,y_n - m_n)]，
+    其中 m_n = max_j z_nj，y_n 为目标类别，N 为预测位置总数。
     不调用 F.cross_entropy，不先 softmax 再 log，不 detach。
     """
     if logits.shape[:-1] != targets.shape:

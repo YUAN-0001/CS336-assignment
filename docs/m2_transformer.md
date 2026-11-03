@@ -34,10 +34,10 @@ logits [B,T,V]
 |---|---|---|
 | T1 Linear | `Y = X Wᵀ` | W 存为 `[Dout,Din]`；保留任意前导维度 |
 | T2 Embedding | 按 ID 选择权重矩阵的行 | `[B,T]` 变为 `[B,T,D]`，不是 one-hot 分类输出 |
-| T3 RMSNorm.forward | `x / sqrt(mean(x²)+eps) * gain` | 只沿最后一维；不减均值；FP32 转换已提供 |
-| T4 SiLU | `x * sigmoid(x)` | 可使用 torch.sigmoid |
-| T5 SwiGLU | `w2(SiLU(w1(x)) * w3(x))` | 中间乘法逐元素进行；输出维度回到 D |
-| T6 Softmax | `exp(x-max(x))/sum(exp(x-max(x)))` | 沿传入 dim；归约时保留维度以便广播 |
+| T3 RMSNorm.forward | `y_i = γ_i x_i / sqrt((1/D) Σ_j x_j² + ε)` | 求和范围为最后一维；不减均值 |
+| T4 SiLU | `SiLU(x) = x σ(x)`，`σ(x) = 1/(1+exp(-x))` | 逐元素计算 |
+| T5 SwiGLU | `(SiLU(X W₁ᵀ) ⊙ (X W₃ᵀ)) W₂ᵀ` | ⊙ 为逐元素乘法；输出维度回到 D |
+| T6 Softmax | `p_i = exp(x_i-m)/Σ_j exp(x_j-m)`，`m=max_j x_j` | i、j 沿传入的 dim |
 
 ```sh
 uv run pytest tests/test_model.py -k "linear or embedding or rmsnorm or silu or swiglu" -q
@@ -60,7 +60,7 @@ T9 构造因果 mask：第 i 行允许第 0 到第 i 列。当前位置能够看
 
 多头拆分已提供：`[B,T,D] → [B,H,T,Dh]`。各头并行做 Attention 后恢复 `[B,T,D]`，再经过输出投影。Q/K/V 是投影后的激活，投影矩阵才是参数。
 
-RoPE 把每对坐标 `(a,b)` 按位置旋转：`(a cosθ-b sinθ, a sinθ+b cosθ)`。T8 位于 `RotaryPositionalEmbedding.forward`，只补 `rotated_even` 与 `rotated_odd` 两条公式；缓存、按位置查询、广播和重新交错已提供。旋转只用于 Q、K，不用于 V；每头使用相同位置规则，旋转维度为 Dh。
+RoPE 把每对坐标 `(a,b)` 按位置旋转：`(a cosθ-b sinθ, a sinθ+b cosθ)`。T8 位于 `RotaryPositionalEmbedding.forward`；缓存、按位置查询、广播和重新交错已提供。旋转只用于 Q、K，不用于 V；每头使用相同位置规则，旋转维度为 Dh。
 
 ```sh
 uv run pytest tests/test_model.py -k "attention or rope" -q

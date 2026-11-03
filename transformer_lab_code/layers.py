@@ -12,14 +12,13 @@ class Linear(nn.Module):
 
         weight 的创建已提供。请使用截断正态分布初始化：均值为 0，
         标准差为 sqrt(2 / (in_features + out_features))，截断范围为 ±3 倍标准差。
-        可使用 math.sqrt 和 nn.init.trunc_normal_。
         """
         super().__init__()
         self.weight = nn.Parameter(torch.empty(out_features, in_features, device=device, dtype=dtype))
         raise NotImplementedError("TODO T1-init: Linear.__init__ — 初始化 self.weight")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """T1：x [..., Din]，weight [Dout, Din] → [..., Dout]，没有 bias。"""
+        """T1：Y = X Wᵀ。x [..., Din]，weight [Dout, Din] → [..., Dout]，没有 bias。"""
         raise NotImplementedError("TODO T1: Linear.forward")
 
 
@@ -28,14 +27,14 @@ class Embedding(nn.Module):
         """TODO T2-init：初始化嵌入矩阵。
 
         weight 的创建已提供。请使用均值为 0、标准差为 1、
-        截断范围为 [-3, 3] 的正态分布初始化，可使用 nn.init.trunc_normal_。
+        截断范围为 [-3, 3] 的正态分布初始化。
         """
         super().__init__()
         self.weight = nn.Parameter(torch.empty(num_embeddings, embedding_dim, device=device, dtype=dtype))
         raise NotImplementedError("TODO T2-init: Embedding.__init__ — 初始化 self.weight")
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
-        """T2：整数 IDs [...] → 向量 [..., D]。使用索引，不需要构造 one-hot。"""
+        """T2：E(i) = W 的第 i 行。整数 IDs [...] → 向量 [..., D]。"""
         raise NotImplementedError("TODO T2: Embedding.forward")
 
 
@@ -43,8 +42,7 @@ class RMSNorm(nn.Module):
     def __init__(self, d_model: int, eps: float = 1e-5, device=None, dtype=None):
         """TODO T3-init：保存归一化所需的配置。
 
-        可学习增益 weight 已创建并初始化为全 1。
-        请将传入的 eps 保存为 self.eps，供 forward 使用。
+        可学习增益 γ 的初值为全 1；归一化稳定项 ε = eps。
         """
         super().__init__()
         self.weight = nn.Parameter(torch.ones(d_model, device=device, dtype=dtype))
@@ -53,8 +51,8 @@ class RMSNorm(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """PDF rmsnorm / T3：输入 [..., D]，返回相同形状与原 dtype。
 
-        在下面直接计算 x / sqrt(mean(x²) + eps) * self.weight，赋值给 result。
-        只沿最后一维归约，保留归约维度，不减均值。类型转换已经提供。
+        y_i = γ_i x_i / sqrt((1/D) Σ_j x_j² + ε)。γ 为可学习增益。
+        求和范围为最后一维的 D 个特征；不减均值。
         """
         original_dtype = x.dtype
         x = x.float()
@@ -64,7 +62,7 @@ class RMSNorm(nn.Module):
 
 
 def silu(x):
-    """T4：SiLU(x) = x * sigmoid(x)，可以使用 torch.sigmoid。"""
+    """T4：SiLU(x) = x σ(x)，其中 σ(x) = 1 / (1 + exp(-x))；逐元素计算。"""
     raise NotImplementedError("TODO T4: silu")
 
 
@@ -79,13 +77,17 @@ class SwiGLU(nn.Module):
         raise NotImplementedError("TODO T5-init: SwiGLU.__init__ — 创建 w1、w2、w3")
 
     def forward(self, x):
-        """T5：w2(SiLU(w1(x)) ⊙ w3(x))。⊙ 是逐元素乘法，不是矩阵乘法。"""
+        """T5：SwiGLU(x) = (SiLU(x W₁ᵀ) ⊙ (x W₃ᵀ)) W₂ᵀ。
+
+        W₁、W₃ 的形状为 [d_ff,d_model]，W₂ 为 [d_model,d_ff]；⊙ 为逐元素乘法。
+        """
         raise NotImplementedError("TODO T5: SwiGLU.forward")
 
 
 def softmax(x, dim=-1):
-    """T6：沿 dim 减最大值、取指数、归一化。允许某些项为 -inf。
+    """T6：p_i = exp(x_i - m) / Σ_j exp(x_j - m)，m = max_j x_j。
 
+    i、j 沿 dim 所指定的维度；允许某些项为 -inf。
     本课程保证每行至少有一个未被屏蔽的有限值，不要求处理全 -inf 行。
     不能调用 torch.softmax / nn.functional.softmax。
     """

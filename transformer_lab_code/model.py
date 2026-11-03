@@ -70,8 +70,8 @@ class TransformerBlock(nn.Module):
     def forward(self, x, token_positions=None):
         """T10：两段 pre-norm 残差。输入和输出均为 [...,T,D]。
 
-        第一段：y = x + attn(ln1(x), token_positions)
-        第二段：在 y 上执行 ln2、ffn，再加回 y。
+        y = x + Attention(RMSNorm₁(x))
+        z = y + FFN(RMSNorm₂(y))
         """
         raise NotImplementedError("TODO T10: TransformerBlock.forward")
 
@@ -102,10 +102,10 @@ class TransformerLM(nn.Module):
             self.lm_head.weight = self.token_embeddings.weight
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
-        """T11：embedding → 顺序遍历 layers → ln_final → lm_head。
+        """T11：h₀ = Embedding(token_ids)，h_l = Block_l(h_{l-1})，l = 1,…,L。
 
-        token_ids [B,T] → logits [B,T,V]。这里不调用 softmax。
-        每层内部会创建默认的位置索引。使用 for block in self.layers 即可。
+        logits = RMSNorm(h_L) W_outᵀ。
+        token_ids [B,T] → logits [B,T,V]；输出为未归一化分数。
         """
         if token_ids.shape[-1] > self.context_length or token_ids.shape[-1] == 0:
             raise ValueError("输入长度必须在 [1, context_length] 内")

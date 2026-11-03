@@ -11,8 +11,9 @@ def last_logits(logits):
 
 
 def temperature_probabilities(logits, temperature):
-    """G2：temperature > 0；调用自己的 softmax，返回最后一维上的概率。
+    """G2：p_i = exp(z_i/τ) / Σ_j exp(z_j/τ)，τ = temperature > 0。
 
+    输入为 logits，输出为最后一维上的概率；复用本阶段的 softmax。
     greedy 分支由框架单独处理，不能把 temperature=0 代入除法。
     """
     raise NotImplementedError("TODO G2: temperature_probabilities")
@@ -23,7 +24,7 @@ def nucleus_keep(sorted_probs, top_p):
 
     输入 [...,V]，各行和为 1；0 < top_p <= 1。
     必须包含首次使累计概率达到/超过阈值的 token，至少保留一个。
-    提示：判断某项之前的累计概率是否小于 top_p。torch.cumsum 可用。
+    k = min{m ≥ 1 : Σ_{j=1}^m p_j ≥ top_p}；保留前 k 项。
     """
     raise NotImplementedError("TODO G3: nucleus_keep")
 

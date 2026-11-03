@@ -15,8 +15,8 @@ def scaled_dot_product_attention(q, k, v, mask=None):
     """T7：softmax(Q K^T / sqrt(Dk)) V。
 
     q [..., Q, Dk]、k [..., K, Dk]、v [..., K, Dv] → [..., Q, Dv]。
-    先缩放并调用 apply_mask，再用自己实现的 softmax；不要调用融合 attention。
-    可以使用 @、transpose(-2, -1)、shape[-1]。Q 和 K 长度不一定相等。
+    softmax 沿 key 维度；mask 为 False 的分数为 -∞，True 表示允许关注。
+    复用本阶段的 softmax；不要调用融合 attention。Q 和 K 长度不一定相等。
     """
     raise NotImplementedError("TODO T7: scaled_dot_product_attention")
 
@@ -35,8 +35,8 @@ class RotaryPositionalEmbedding(nn.Module):
     def forward(self, x: torch.Tensor, token_positions: torch.Tensor) -> torch.Tensor:
         """PDF rope / T8：按 token_positions 旋转相邻坐标，保持 [...,T,Dk] 形状。
 
-        缓存、位置查询、广播和交错已提供。在 TODO 中由 even/odd/cos/sin
-        计算 rotated_even、rotated_odd；公式见 docs/m2_transformer.md。
+        对位置 p 的第 j 对坐标 (a,b)，旋转角 φ = p θ^(-2j/Dk)：
+        a' = a cosφ - b sinφ，b' = a sinφ + b cosφ，j 从 0 开始。
         """
         cos = self.cos[token_positions].to(x.dtype)
         sin = self.sin[token_positions].to(x.dtype)
@@ -52,7 +52,7 @@ class RotaryPositionalEmbedding(nn.Module):
 def causal_mask(length, device=None):
     """T9：返回 bool [T,T]；第 i 行只允许 j <= i（含对角线）。
 
-    可使用 torch.arange 和索引比较，或 torch.ones(..., dtype=torch.bool).tril()。
+    M_ij = True 当且仅当 j ≤ i；其余为 False。
     """
     raise NotImplementedError("TODO T9: causal_mask")
 
