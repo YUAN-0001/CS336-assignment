@@ -15,7 +15,17 @@ def build_index(words: list[Word]) -> PairIndex:
     word_id 是 words 的下标。同一 word 中出现多次，只登记一次 ID。
     可调用 adjacent_pairs；不得修改 words。
     """
-    raise NotImplementedError("TODO B1: build_index")
+    index: PairIndex = {}
+    
+    for word_id, word in enumerate(words):
+        pairs = adjacent_pairs(word.tokens)
+        
+        for pair in pairs:
+            if pair not in index:
+                index[pair] = set()
+            index[pair].add(word_id)
+
+    return index
 
 
 def update_counts(
@@ -29,7 +39,15 @@ def update_counts(
     before/after 是该 word 未乘 frequency 的局部计数。
     其他 word 的贡献必须保留；删除归零项；不能留下负数或修改 before/after。
     """
-    raise NotImplementedError("TODO B2: update_counts")
+    for pair, count in before.items():
+        pair_counts[pair] -= count * frequency
+
+    for pair, count in after.items():
+        pair_counts[pair] += count * frequency
+
+    to_delete = [pair for pair, count in pair_counts.items() if count <= 0]
+    for pair in to_delete:
+        del pair_counts[pair]
 
 
 def update_index(index: PairIndex, word_id: int, before: Counter[Pair], after: Counter[Pair]) -> None:
@@ -38,7 +56,17 @@ def update_index(index: PairIndex, word_id: int, before: Counter[Pair], after: C
     索引记录存在性，不是次数。仍然存在的 pair 保留 ID，消失的删除，新增的加入。
     保留其他 word 的 ID；删除空集合。不能修改 before/after。
     """
-    raise NotImplementedError("TODO B3: update_index")
+    for pair in before:
+        if pair not in after:
+            index[pair].discard(word_id)
+            if not index[pair]:
+                del index[pair]
+
+    for pair in after:
+        if pair not in before:
+            if pair not in index:
+                index[pair] = set()
+            index[pair].add(word_id)
 
 
 def assert_consistent(words: list[Word], counts: Counter[Pair], index: PairIndex) -> None:
