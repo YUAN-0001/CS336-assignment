@@ -7,6 +7,7 @@ import regex
 from .common import Pair, validate_special_tokens
 from .pretokenize import PATTERN, split_special
 
+from .naive import merge_sequence
 
 class Tokenizer:
     """PDF §2.6：由 vocab / merges 构造，或通过 from_files 读取双文件。"""
@@ -59,7 +60,28 @@ class Tokenizer:
         self.byte_to_id 提供最终 bytes -> ID 映射，可复用 A3。
         不修改词表或 merges；空 bytes 返回空列表。
         """
-        raise NotImplementedError("TODO C1: encode_pretoken")
+        if not raw:
+            return []
+
+        sequence = tuple(bytes([b]) for b in raw)
+
+        while True:
+            # 找出当前 sequence 中所有存在于 merge_ranks 里的 pair
+            valid_pairs = []
+            for i in range(len(sequence) - 1):
+                pair = (sequence[i], sequence[i + 1])
+                if pair in self.merge_ranks:
+                    valid_pairs.append(pair)
+            
+            if not valid_pairs:
+                break
+                
+            best_pair = min(valid_pairs, key=lambda p: self.merge_ranks[p])
+
+            #复用A3，import merge_sequence放在文件开头
+            sequence = merge_sequence(sequence, best_pair)
+
+        return [self.byte_to_id[token] for token in sequence]
 
     def encode(self, text: str) -> list[int]:
         if not isinstance(text, str):
@@ -79,7 +101,14 @@ class Tokenizer:
         不能逐个 token 解码，因为一个汉字/emoji 的字节可能分布在多个 token 中。
         空输入返回空字符串；未知 ID 抛出 KeyError，不要静默丢弃。
         """
-        raise NotImplementedError("TODO C2: decode")
+        if not isinstance(ids, list):
+            raise TypeError("decode 需要 list[int]")
+        if not all(isinstance(i, int) for i in ids):
+            raise TypeError("decode 需要 list[int]")
+        if not all(i in self.vocab for i in ids):
+            raise KeyError("decode 遇到未知 ID")
+        raw_bytes = b''.join(self.vocab[i] for i in ids)
+        return raw_bytes.decode('utf-8', errors='replace')
 
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
         """教师提供：逐项编码、逐项产出，不一次性读入全部输入。

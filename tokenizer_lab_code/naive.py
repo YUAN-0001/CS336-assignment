@@ -2,17 +2,25 @@
 
 from collections import Counter
 
-from .common import MergeStep, Pair, Sequence, TrainingResult, Word, check_record, initialize
-
+from .common import MergeStep, Pair, Sequence, TrainingResult, Word, check_record, initialize, adjacent_pairs
 
 def count_pairs(words: list[Word]) -> Counter[Pair]:
     """TODO A1：返回所有 pre-token 的加权相邻 pair 频次。
 
     可调用 common.adjacent_pairs。每个位置贡献 word.frequency。
     例如 Word((b'a', b'a', b'a'), 3) 对 (b'a', b'a') 贡献 6。
-    不计跨 Word 的 pair；不能修改输入。空输入返回空 Counter。
+    不计跨 Word 的 pair；不能修改输入。空输入返回空 Counter。 
     """
-    raise NotImplementedError("TODO A1: count_pairs")
+    total_counts = Counter()
+    
+    for word in words:
+        internal_counts = adjacent_pairs(word.tokens)
+        
+        # 遍历内部的每一个 pair，乘上这个词在语料中的频次，并累加
+        for pair, count in internal_counts.items():
+            total_counts[pair] += count * word.frequency
+
+    return total_counts
 
 
 def select_pair(pair_counts: Counter[Pair]) -> Pair | None:
@@ -21,7 +29,19 @@ def select_pair(pair_counts: Counter[Pair]) -> Pair | None:
     平局按 pair 的 bytes 元组字典序取较大者，而不是按拼接后的 bytes。
     比较规则与插入顺序无关，不能修改输入。
     """
-    raise NotImplementedError("TODO A2: select_pair")
+    if not pair_counts:
+        return None
+
+    # 找到频次最大且为正的 pair
+    max_count = max(pair_counts.values())
+    if max_count <= 0:
+        return None
+
+    # 筛选出所有频次为最大值的 pair
+    candidates = [pair for pair, count in pair_counts.items() if count == max_count]
+
+    # 返回字典序最大的 pair
+    return max(candidates)
 
 
 def merge_sequence(sequence: Sequence, pair: Pair) -> Sequence:
@@ -30,7 +50,24 @@ def merge_sequence(sequence: Sequence, pair: Pair) -> Sequence:
     (a,a,a) 合并 (a,a) 得 (aa,a)，不是 (a,aa)，也不是 (aaa,)。
     未命中、空序列和单 token 序列保持不变。不能跨 pre-token 合并。
     """
-    raise NotImplementedError("TODO A3: merge_sequence")
+    if not sequence or len(sequence) < 2:
+        return sequence
+
+    merged_sequence = []
+    i = 0
+    while i < len(sequence):
+        # 检查当前和下一个 token 是否匹配指定的 pair
+        if i < len(sequence) - 1 and (sequence[i], sequence[i + 1]) == pair:
+            # 合并匹配的 pair
+            merged_token = sequence[i] + sequence[i + 1]
+            merged_sequence.append(merged_token)
+            i += 2  # 跳过下一个 token，因为它已经被合并
+        else:
+            # 没有匹配，直接添加当前 token
+            merged_sequence.append(sequence[i])
+            i += 1
+
+    return tuple(merged_sequence)
 
 
 def record_merge(result: TrainingResult, pair: Pair) -> None:
@@ -40,7 +77,9 @@ def record_merge(result: TrainingResult, pair: Pair) -> None:
     连续 ID、复用已有词条和同步反向索引。merges 仍须记录本次 pair。
     不要改变已有 ID、trace 或普通字节的映射。
     """
-    raise NotImplementedError("TODO A4: record_merge")
+    merged_token = pair[0] + pair[1]
+    result.register_token(merged_token)
+    result.merges.append(pair)
 
 
 def train(
