@@ -73,7 +73,10 @@ class TransformerBlock(nn.Module):
         y = x + Attention(RMSNorm₁(x))
         z = y + FFN(RMSNorm₂(y))
         """
-        raise NotImplementedError("TODO T10: TransformerBlock.forward")
+        y = x + self.attn(self.ln1(x), token_positions=token_positions)
+        z = y + self.ffn(self.ln2(y))
+        return z
+        #        raise NotImplementedError("TODO T10: TransformerBlock.forward")
 
 
 class TransformerLM(nn.Module):
@@ -109,7 +112,13 @@ class TransformerLM(nn.Module):
         """
         if token_ids.shape[-1] > self.context_length or token_ids.shape[-1] == 0:
             raise ValueError("输入长度必须在 [1, context_length] 内")
-        raise NotImplementedError("TODO T11: TransformerLM.forward")
+        h = self.token_embeddings(token_ids)
+        for layer in self.layers:
+            h = layer(h, token_positions=None)
+        h = self.ln_final(h)
+        logits = self.lm_head(h)
+        return logits
+        # raise NotImplementedError("TODO T11: TransformerLM.forward")
 
     def config_dict(self):
         return asdict(self.config)

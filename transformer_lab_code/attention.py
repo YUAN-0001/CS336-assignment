@@ -18,7 +18,12 @@ def scaled_dot_product_attention(q, k, v, mask=None):
     softmax 沿 key 维度；mask 为 False 的分数为 -∞，True 表示允许关注。
     复用本阶段的 softmax；不要调用融合 attention。Q 和 K 长度不一定相等。
     """
-    raise NotImplementedError("TODO T7: scaled_dot_product_attention")
+    d_k = q.shape[-1]
+    scores = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(d_k, dtype=q.dtype, device=q.device))
+    scores = apply_mask(scores, mask)
+    attention_weights = softmax(scores, dim=-1)
+    return torch.matmul(attention_weights, v)
+    #    raise NotImplementedError("TODO T7: scaled_dot_product_attention")
 
 
 class RotaryPositionalEmbedding(nn.Module):
@@ -44,8 +49,9 @@ class RotaryPositionalEmbedding(nn.Module):
         while cos.ndim < x.ndim:
             cos, sin = cos.unsqueeze(-3), sin.unsqueeze(-3)
         even, odd = x[..., 0::2], x[..., 1::2]
-        rotated_even = rotated_odd = None
-        raise NotImplementedError("TODO T8: RotaryPositionalEmbedding.forward — 两条旋转公式")
+        rotated_even = even * cos - odd * sin
+        rotated_odd  = even * sin + odd * cos
+        # raise NotImplementedError("TODO T8: RotaryPositionalEmbedding.forward — 两条旋转公式")
         return torch.stack((rotated_even, rotated_odd), dim=-1).flatten(-2)
 
 
@@ -54,7 +60,9 @@ def causal_mask(length, device=None):
 
     M_ij = True 当且仅当 j ≤ i；其余为 False。
     """
-    raise NotImplementedError("TODO T9: causal_mask")
+    mask = torch.tril(torch.ones((length, length), dtype=torch.bool, device=device))
+    return mask
+    #    raise NotImplementedError("TODO T9: causal_mask")
 
 
 def split_heads(x, num_heads):
